@@ -1,0 +1,8 @@
+<object_type>: The type of the annotated object. This can be one of the following: 'Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc', or 'DontCare'. 'DontCare' is used for objects that are present but ignored for evaluation.
+<truncation>: The fraction of the object that is visible. It is a float value in the range [0.0, 1.0]. A value of 0.0 means the object is fully visible, and 1.0 means the object is completely outside the image frame.
+<occlusion>: The level of occlusion of the object. It is an integer value indicating the degree of occlusion, where 0 means fully visible, and higher values indicate increasing levels of occlusion.
+<alpha>: The observation angle of the object in radians, relative to the camera. It is the angle between the object's heading direction and the positive x-axis of the camera.
+<left>, <top>, <right>, <bottom>: The 2D bounding box coordinates of the object in the image. They represent the pixel locations of the top-left and bottom-right corners of the bounding box.
+<height>, <width>, <length>: The 3D dimensions of the object (height, width, and length) in meters.
+<x>, <y>, <z>: The 3D location of the object's centroid in the camera coordinate system (in meters).
+<rotation_y>: The rotation of the object around the y-axis in camera coordinates, in radians.
