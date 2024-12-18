@@ -69,19 +69,17 @@ def fill_blank(img: np.ndarray, trh: float, num_valid: int):
 
 def normalized_fmap(fmap: np.ndarray, cidx: list):
     """
-    对 [H, W, C] 的特征图的指定通道进行归一化。
+    对 [C, H, W] 的特征图的指定通道进行归一化。
     
-    - param feature_map: 形状为 [H, W, C] 的 NumPy ndarray。
-    - return: 归一化后的特征图，形状为 [H, W, C]。
+    - param feature_map: 形状为 [C, H, W] 的 NumPy ndarray。
+    - return: 归一化后的特征图，形状为 [C, H, W]。
     """
-    # 获取特征图的形状
-    H, W, C = fmap.shape
     
     # 对每个通道进行归一化
     normalized_feature_map = np.zeros_like(fmap, dtype=np.float32)
     for c in cidx:
-        # 获取当前通道的数据
-        channel = fmap[:, :, c]
+        # 获取当前通道的特征图
+        channel = fmap[c]
         
         # 计算当前通道的最小值和最大值
         min_value = np.min(channel)
@@ -94,6 +92,6 @@ def normalized_fmap(fmap: np.ndarray, cidx: list):
             normalized_channel = np.zeros_like(channel, dtype=np.float32)
         
         # 将归一化后的通道赋值回特征图
-        normalized_feature_map[:, :, c] = normalized_channel
+        normalized_feature_map[c] = normalized_channel
     
     return normalized_feature_map

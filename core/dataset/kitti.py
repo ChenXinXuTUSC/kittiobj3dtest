@@ -74,8 +74,8 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         fmap, gdth, rmap = self.__spherical_project(index)
         fmap = utils.normalized_fmap(fmap, [3, 4])
         # do smooth on range and intensity channel
-        fmap[:, :, 3] = utils.fill_blank(fmap[:, :, 3], 1e-4, 4)
-        fmap[:, :, 4] = utils.fill_blank(fmap[:, :, 4], 1e-4, 4)
+        fmap[3] = utils.fill_blank(fmap[3], 1e-4, 4)
+        fmap[4] = utils.fill_blank(fmap[4], 1e-4, 4)
         gdth = utils.fill_blank(gdth, 1e-4, 4)
 
         return fmap, gdth
@@ -221,21 +221,21 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         y = y - y.min()
 
         gdth = np.zeros((self.IMG_H, self.IMG_W))
-        fmap = np.zeros((self.IMG_H, self.IMG_W, 5))
+        fmap = np.zeros((5, self.IMG_H, self.IMG_W))
         rmap = [[[] for _ in range(self.IMG_W)] for _ in range(self.IMG_H)]
 
-        # fill the feature map `fmap` [x, y, z, r, i]
+        # feature vector [x, y, z, r, i], shape [C, H, W]
         # as there might be multiple points projected into one grid
         # I choose not to use np.add.at to parallel projection
         for i in range(len(front_indics)):
             rmap[y[i]][x[i]].append(front_indics[i])
             # select the point with nearest range as the feature pixel
             dist = np.linalg.norm(points[front_indics[i]])
-            if  fmap[y[i], x[i]][3] != 0 and dist < fmap[y[i], x[i]][3]:
-                fmap[y[i], x[i]] = np.array([*points[front_indics[i]], dist, reflec[front_indics[i]]])
+            if  fmap[3, y[i], x[i]] != 0 and dist < fmap[3][y[i], x[i]]:
+                fmap[:, y[i], x[i]] = np.array([*points[front_indics[i]], dist, reflec[front_indics[i]]])
                 gdth[y[i], x[i]] = ptscls[front_indics[i]]
             else:
-                fmap[y[i], x[i]] = np.array([*points[front_indics[i]], dist, reflec[front_indics[i]]])
+                fmap[:, y[i], x[i]] = np.array([*points[front_indics[i]], dist, reflec[front_indics[i]]])
                 gdth[y[i], x[i]] = ptscls[front_indics[i]]
         
         return fmap, gdth, rmap

@@ -25,14 +25,19 @@ def main():
         core.dataset.KITTISpherical(
             "data", "train"
         ),
-        batch_size=conf.batch_size,
+        batch_size=conf.dataloader.batch_size,
         shuffle=True,
         num_workers=4
     )
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = core.model.squeezeseg.SqueezeSeg(conf.model)
+    model.to(device)
 
     for iter, (fmap, gdth) in enumerate(train_loader):
+        fmap = fmap.to(device)
+        gdth = gdth.to(device)
+        
         pred = model(fmap)
         break
 
