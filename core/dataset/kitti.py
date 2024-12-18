@@ -49,10 +49,10 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         self.kitti_root = kitti_root
 
         num_frames = len([
-            x for x in os.listdir(osp.join(kitti_root, "train", "velodyne")) if x.endswith(".bin")
+            x for x in os.listdir(osp.join(kitti_root, "training", "velodyne")) if x.endswith(".bin")
         ])
         self.frame_index = list(range(num_frames))
-        self.frame_index = random.shuffle(self.frame_index)
+        random.shuffle(self.frame_index)
 
         if split == "train":
             self.frame_index = self.frame_index[:int(num_frames * self.TRAIN_SET_RATIO)]
@@ -62,7 +62,9 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         # class name and label index
         self.cls2ldx = {v: i for (i, v) in enumerate(self.kitti_obj3d_det_cls_names)}
         self.ldx2cls = {i: v for (v, i) in self.cls2ldx.items()}
-    
+
+        self.num_cls = len(self.kitti_obj3d_det_cls_names)
+
 
     def __len__(self) -> int:
         return len(self.frame_index)
@@ -76,23 +78,23 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         fmap[:, :, 4] = utils.fill_blank(fmap[:, :, 4], 1e-4, 4)
         gdth = utils.fill_blank(gdth, 1e-4, 4)
 
-        return fmap, gdth, rmap
+        return fmap, gdth
     
 
     def __spherical_project(self, index: int):
         '''
         - kitti_obj3d_root: path to dataset dir containing training and testing dir
-        - sample_index: frame data index
+        - index: frame data index
         '''
         assert osp.exists(self.kitti_root), "dataset root not exist"
-        assert sample_index >= 0 and sample_index <= 7480,\
+        assert index >= 0 and index <= 7480,\
             "index out of train samples in kitti object 3d dataset"
 
-        sample_index = f"{index:06d}" # pad with 0
+        index = f"{index:06d}" # pad with 0
 
         # step 1 - read lidar points
         bin_path = osp.join(
-            self.kitti_root, "training", "velodyne", f"{sample_index}.bin"
+            self.kitti_root, "training", "velodyne", f"{index}.bin"
         )
         bin_size = osp.getsize(bin_path)
         assert bin_size % 16 == 0, "invalid binary structure for kitti bin"
@@ -128,7 +130,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
                 self.kitti_root,
                 "training",
                 "label_2",
-                f"{sample_index}.txt"),
+                f"{index}.txt"),
                 "r"
         ) as f:
             item_list = [
@@ -149,7 +151,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
                 self.kitti_root,
                 "training",
                 "calib",
-                f"{sample_index}.txt",
+                f"{index}.txt",
             ), "r"
         ) as f:
             item_list = [
