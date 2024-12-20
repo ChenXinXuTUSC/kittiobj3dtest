@@ -1,45 +1,62 @@
-import sys
 import os
 import os.path as osp
+import argparse
 
 import torch
 import torch.utils.data
 
 import core
 
-import argparse
-
-import matplotlib.pyplot as plt
-
 
 parser = argparse.ArgumentParser("train.py")
 args_group_conf = parser.add_argument_group("conf", "arguments related to conf read")
-args_group_conf.add_argument("--yaml", type=str, help="path to yaml conf file")
+args_group_conf.add_argument("--conf_data_yaml", type=str, help="path to dataset conf file")
+args_group_conf.add_argument("--conf_model_yaml", type=str, help="path to model conf file")
+args_group_conf.add_argument("--conf_trainer_yaml", type=str, help="path to trainer conf file")
+
 
 def main():
     args = parser.parse_args()
+    conf_dataset = core.readconfyaml.read(args.conf_data_yaml)
+    conf_model = core.readconfyaml.read(args.conf_model_yaml)
+    conf_trainer = core.readconfyaml.read(args.conf_trainer_yaml)
 
-    conf = core.readconfyaml.read(args.yaml)
-
-    train_loader = torch.utils.data.DataLoader(
-        core.dataset.KITTISpherical(
-            "data", "train"
+    train_dataloader = torch.utils.data.DataLoader(
+        dataset=core.dataset.KITTISpherical(
+            "data", "train", conf_dataset
         ),
-        batch_size=conf.dataloader.batch_size,
+        batch_size=conf_dataset.batch_size,
         shuffle=True,
         num_workers=4
     )
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = core.model.squeezeseg.SqueezeSeg(conf.model)
-    model.to(device)
+    valid_dataloader = torch.utils.data.DataLoader(
+        dataset=core.dataset.KITTISpherical(
+            "data", "valid", conf_dataset
+        ),
+        batch_size=conf_dataset.batch_size,
+        shuffle=True,
+        num_workers=4
+    )
 
-    for iter, (fmap, gdth) in enumerate(train_loader):
-        fmap = fmap.to(device)
-        gdth = gdth.to(device)
-        
-        pred = model(fmap)
-        break
+    model = core.model.squeezeseg.SqueezeSeg(
+        in_channels=conf_model.in_channels,
+        out_channels=conf_model.out_channels,
+        conf=conf_model
+    )
+
+    trainer = core.pipe.Trainer(
+        model,
+        train_dataloader=train_dataloader,
+        valid_dataloader=valid_dataloader,
+        cls_weight=None,
+        ignore_cls=conf_dataset.ignore_cls,
+        log_alldir=conf_trainer.log_alldir,
+        num_epochs=conf_trainer.num_epochs,
+        log_interv=conf_trainer.log_interv
+    )
+
+    trainer.train()
 
 
 if __name__ == "__main__":

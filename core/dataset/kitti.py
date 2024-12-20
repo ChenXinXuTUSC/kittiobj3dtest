@@ -13,40 +13,14 @@ import utils
 
 
 class KITTISpherical(torch.utils.data.dataset.Dataset):
-    TRAIN_SET_RATIO = 0.7
-    TEST_SET_RATIO = 0.3
-    IMG_W = 512
-    IMG_H = 64
-
-    kitti_obj3d_det_cls_names = [
-        "DontCare",
-        "Car",
-        "Cyclist",
-        "Misc",
-        "Pedestrian",
-        "Person_sitting",
-        "Tram",
-        "Truck",
-        "Van"
-    ]
-
-    label_field_name_list = [
-        "object_type",
-        "truncation",
-        "occlusion",
-        "alpha",
-        "left", "top", "right", "bottom",
-        "height", "width", "length",
-        "x", "y", "z",
-        "rotation_y"
-    ]
-
-    def __init__(self, kitti_root: str, split: str):
+    def __init__(self, kitti_root: str, split: str, conf):
         super().__init__()
+        # kitti doesn't provide ground truth for test set
+        assert split == "train" or split == "valid", "invalid split"
+        assert osp.exists(kitti_root), "dataset root not exist"
 
-        assert split == "train" or split == "test", "invalid split"
-        
         self.kitti_root = kitti_root
+        self.conf = conf
 
         num_frames = len([
             x for x in os.listdir(osp.join(kitti_root, "training", "velodyne")) if x.endswith(".bin")
@@ -55,15 +29,15 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         random.shuffle(self.frame_index)
 
         if split == "train":
-            self.frame_index = self.frame_index[:int(num_frames * self.TRAIN_SET_RATIO)]
-        if split == "test":
-            self.frame_index = self.frame_index[:int(num_frames * self.TEST_SET_RATIO)]
+            self.frame_index = self.frame_index[:int(num_frames * conf.train_set_ratio)]
+        if split == "valid":
+            self.frame_index = self.frame_index[:int(num_frames * conf.valid_set_ratio)]
 
         # class name and label index
-        self.cls2ldx = {v: i for (i, v) in enumerate(self.kitti_obj3d_det_cls_names)}
+        self.cls2ldx = {v: i for (i, v) in enumerate(conf.kitti_obj3d_det_cls_names)}
         self.ldx2cls = {i: v for (v, i) in self.cls2ldx.items()}
 
-        self.num_cls = len(self.kitti_obj3d_det_cls_names)
+        self.num_cls = len(conf.kitti_obj3d_det_cls_names)
 
 
     def __len__(self) -> int:
@@ -82,14 +56,6 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
     
 
     def __spherical_project(self, index: int):
-        '''
-        - kitti_obj3d_root: path to dataset dir containing training and testing dir
-        - index: frame data index
-        '''
-        assert osp.exists(self.kitti_root), "dataset root not exist"
-        assert index >= 0 and index <= 7480,\
-            "index out of train samples in kitti object 3d dataset"
-
         index = f"{index:06d}" # pad with 0
 
         # step 1 - read lidar points
@@ -141,7 +107,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         
         label_list = [
             easydict.EasyDict(
-                {field:value for (field, value) in zip(self.label_field_name_list, item)}
+                {field:value for (field, value) in zip(self.conf.label_field_name_list, item)}
             ) for item in item_list
         ]
 
@@ -208,8 +174,8 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         x = np.arcsin(points[mask, 1] / np.linalg.norm(points[mask, :2], axis=1))
         y = np.arcsin(points[mask, 2] / np.linalg.norm(points[  mask  ], axis=1))
 
-        field_x_range, res_x = np.pi / 2               , self.IMG_W
-        filed_y_range, res_y = y.max() - y.min() + 1e-2, self.IMG_H
+        field_x_range, res_x = np.pi / 2               , self.conf.proj_img_w
+        filed_y_range, res_y = y.max() - y.min() + 1e-2, self.conf.proj_img_h
 
         delta_x = field_x_range / res_x
         delta_y = filed_y_range / res_y
@@ -220,9 +186,9 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         x = x - x.min()
         y = y - y.min()
 
-        gdth = np.zeros((self.IMG_H, self.IMG_W))
-        fmap = np.zeros((5, self.IMG_H, self.IMG_W))
-        rmap = [[[] for _ in range(self.IMG_W)] for _ in range(self.IMG_H)]
+        gdth = np.zeros((self.conf.proj_img_h, self.conf.proj_img_w))
+        fmap = np.zeros((5, self.conf.proj_img_h, self.conf.proj_img_w))
+        rmap = [[[] for _ in range(self.conf.proj_img_w)] for _ in range(self.conf.proj_img_h)]
 
         # feature vector [x, y, z, r, i], shape [C, H, W]
         # as there might be multiple points projected into one grid

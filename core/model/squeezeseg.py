@@ -22,11 +22,11 @@ class FireConv(nn.Module):
         return torch.cat([ex1x1, ex3x3], dim=1)
 
 class FireDeconv(nn.Module):
-    def __init__(self, in_channels, sq1x1, ex1x1, ex3x3, factors=[1,2], freeze=False, stddev=0.001):
+    def __init__(self, in_channels, sq1x1, ex1x1, ex3x3, factors=[2, 2], freeze=False, stddev=0.001):
         super(FireDeconv, self).__init__()
         self.sq1x1 = nn.Conv2d(in_channels, sq1x1, kernel_size=1, stride=1, padding=0)
-        ksize_h = factors[0] * 2 - factors[0] % 2
-        ksize_w = factors[1] * 2 - factors[1] % 2
+        ksize_h = factors[0]
+        ksize_w = factors[1]
         self.deconv = nn.ConvTranspose2d(sq1x1, sq1x1, kernel_size=(ksize_h, ksize_w), stride=factors, padding=0)
         self.ex1x1 = nn.Conv2d(sq1x1, ex1x1, kernel_size=1, stride=1, padding=0)
         self.ex3x3 = nn.Conv2d(sq1x1, ex3x3, kernel_size=3, stride=1, padding=1)
@@ -58,56 +58,59 @@ class FireDeconv(nn.Module):
     
 
 class SqueezeSeg(nn.Module):
-    def __init__(self, conf):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        conf: dict = None,
+    ):
         super(SqueezeSeg, self).__init__()
-
-        in_channels = conf.in_channels  # 假设定义了输入通道数
 
         self.conv1       = nn.Conv2d(in_channels, 64, kernel_size=3, stride=2, padding=1)
         self.conv1_skip  = nn.Conv2d(in_channels, 64, kernel_size=1, stride=1, padding=0)
         self.pool1       = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.fire2       = FireConv( 64, 16, 64, 64)
-        self.fire3       = FireConv(128, 16, 64, 64)
+        self.conv2       = FireConv( 64, 16, 64, 64)
+        self.conv3       = FireConv(128, 16, 64, 64)
         self.pool3       = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.fire4       = FireConv(256, 32, 128, 128)
-        self.fire5       = FireConv(256, 32, 128, 128)
+        self.conv4       = FireConv(128, 32, 128, 128)
+        self.conv5       = FireConv(256, 32, 128, 128)
         self.pool5       = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.fire6       = FireConv(512, 48, 192, 192)
-        self.fire7       = FireConv(384, 48, 192, 192)
-        self.fire8       = FireConv(384, 64, 256, 256)
-        self.fire9       = FireConv(512, 64, 256, 256)
-        self.fire10      = FireDeconv(512, 64, 128, 128, factors=[1, 2])
-        self.fire11      = FireDeconv(256, 32,  64,  64, factors=[1, 2])
-        self.fire12      = FireDeconv(128, 16,  32,  32, factors=[1, 2])
-        self.fire13      = FireDeconv( 64, 16,  32,  32, factors=[1, 2])
+        self.conv6       = FireConv(256, 48, 192, 192)
+        self.conv7       = FireConv(384, 48, 192, 192)
+        self.conv8       = FireConv(384, 64, 256, 256)
+        self.conv9       = FireConv(512, 64, 256, 256)
+        self.deconv10    = FireDeconv(512, 64, 128, 128, factors=[2, 2])
+        self.deconv11    = FireDeconv(256, 32,  64,  64, factors=[2, 2])
+        self.deconv12    = FireDeconv(128, 16,  32,  32, factors=[2, 2])
+        self.deconv13    = FireDeconv( 64, 16,  32,  32, factors=[2, 2])
         self.drop13      = nn.Dropout2d(p=conf.dropout)
-        self.conv14_prob = nn.Conv2d(64, conf.num_cls, kernel_size=3, stride=1, padding=1)
+        self.conv14_prob = nn.Conv2d(64, out_channels, kernel_size=3, stride=1, padding=1)
         # where is CRF refine RNN layer ?
 
-    def forward(self, x):
-        conv1       = self.conv1(x)
-        conv1_skip  = self.conv1_skip(x)
-        pool1       = self.pool1(conv1)
-        fire2       = self.fire2(pool1)
-        fire3       = self.fire3(fire2)
-        pool3       = self.pool3(fire3)
-        fire4       = self.fire4(pool3)
-        fire5       = self.fire5(fire4)
-        pool5       = self.pool5(fire5)
-        fire6       = self.fire6(pool5)
-        fire7       = self.fire7(fire6)
-        fire8       = self.fire8(fire7)
-        fire9       = self.fire9(fire8)
-        fire10      = self.fire10(fire9)
-        fire10_fuse = fire10 + fire5
-        fire11      = self.fire11(fire10_fuse)
-        fire11_fuse = fire11 + fire3
-        fire12      = self.fire12(fire11_fuse)
-        fire12_fuse = fire12 + conv1
-        fire13      = self.fire13(fire12_fuse)
-        fire13_fuse = fire13 + conv1_skip
-        drop13      = self.drop13(fire13_fuse)
-        conv14_prob = self.conv14_prob(drop13)
+    def forward(self, x):                           # [N,   5, 64, 512]
+        conv1_out   = self.conv1(x)                 # [N,  64, 32, 256]
+        skip1_out   = self.conv1_skip(x)            # [N,  64, 64, 512]
+        pool1_out   = self.pool1(conv1_out)         # [N,  64, 16, 128]
+        conv2_out   = self.conv2(pool1_out)         # [N, 128, 16, 128]
+        conv3_out   = self.conv3(conv2_out)         # [N, 256, 16, 128]
+        pool3_out   = self.pool3(conv3_out)         # [N, 256,  8,  64]
+        conv4_out   = self.conv4(pool3_out)         # [N, 256,  8,  64]
+        conv5_out   = self.conv5(conv4_out)         # [N, 256,  8,  64]
+        pool5_out   = self.pool5(conv5_out)         # [N, 256,  4,  32]
+        conv6_out   = self.conv6(pool5_out)         # [N, 384,  4,  32]
+        conv7_out   = self.conv7(conv6_out)         # [N, 384,  4,  32]
+        conv8_out   = self.conv8(conv7_out)         # [N, 512,  4,  32]
+        conv9_out   = self.conv9(conv8_out)         # [N, 512,  4,  32]
+        decv10_out  = self.deconv10(conv9_out)      # [N, 256,  8,  64]
+        fuse_10_5   = decv10_out + conv5_out        # [N, 256,  8,  64]
+        decv11_out  = self.deconv11(fuse_10_5)      # [N, 128, 16, 128]
+        fuse_11_3   = decv11_out + conv3_out        # [N, ]
+        decv12_out  = self.deconv12(fuse_11_3)
+        fuse_12_1   = decv12_out + conv1_out
+        decv13_out  = self.deconv13(fuse_12_1)
+        fuse_13_1   = decv13_out + skip1_out
+        drop13_out  = self.drop13(fuse_13_1)
+        conv14_prob = self.conv14_prob(drop13_out)
         # bilateral_filter_weights = self._bilateral_filter_layer(self.lidar_input[:, :, :, :3])
         # output_prob = self._recurrent_crf_layer(conv14_prob, bilateral_filter_weights)
         return conv14_prob

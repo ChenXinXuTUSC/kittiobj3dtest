@@ -1,8 +1,0 @@
-dataloader:
-  batch_size: 4
-  num_epochs: 10
-
-model:
-  num_cls: 9
-  dropout: 0.25
-  in_channels: 5

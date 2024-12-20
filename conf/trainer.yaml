@@ -1,0 +1,4 @@
+lr: 0.001
+num_epochs: 10
+log_alldir: "log/test"
+log_interv: 10
