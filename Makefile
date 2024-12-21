@@ -1,4 +1,4 @@
 .PHONY: clean
 
 clean:
-	rm -rf log/*
+	rm -rf log/test/*
