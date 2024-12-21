@@ -65,6 +65,7 @@ class SqueezeSeg(nn.Module):
         conf: dict = None,
     ):
         super(SqueezeSeg, self).__init__()
+        self.num_classes = out_channels
 
         self.conv1       = nn.Conv2d(in_channels, 64, kernel_size=3, stride=2, padding=1)
         self.conv1_skip  = nn.Conv2d(in_channels, 64, kernel_size=1, stride=1, padding=0)
