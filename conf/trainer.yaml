@@ -1,4 +1,13 @@
 lr: 0.001
-num_epochs: 10
-log_alldir: "log/test"
-log_interv: 10
+num_epochs: 25
+log_alldir: "log"
+log_interv: 25
+exp_name: "test"
+
+cls_weight: [0.08, 1.2, 1.1, 0.5, 1, 1, 1, 1, 1]
+ignore_cls: -1
+bkgcls_idx: 0
+
+batch_size: 8
+
+bg_clsname: "DontCare"

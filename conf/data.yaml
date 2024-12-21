@@ -21,12 +21,19 @@ label_field_name_list: [
     "rotation_y"
 ]
 
+pallete:
+    DontCare: [0, 0, 0]
+    Car: [255, 0, 0]
+    Cyclist: [0, 255, 0]
+    Pedestrian: [0, 0, 255]
+    Misc: [255, 255, 0]
+    Person_sitting: [255, 0, 255]
+    Tram: [0, 255, 255]
+    Truck: [255, 128, 0]
+    Van: [0, 128, 255]
+
 train_set_ratio: 0.7
 valid_set_ratio: 0.3
 
 proj_img_w: 512
 proj_img_h: 64
-
-ignore_cls: 0
-bg_clsname: "DontCare"
-batch_size: 4
