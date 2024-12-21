@@ -7,7 +7,6 @@ import numpy as np
 
 import struct
 import easydict
-import random
 
 import utils
 
@@ -26,12 +25,11 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
             x for x in os.listdir(osp.join(kitti_root, "training", "velodyne")) if x.endswith(".bin")
         ])
         self.frame_index = list(range(num_frames))
-        random.shuffle(self.frame_index)
 
         if split == "train":
             self.frame_index = self.frame_index[:int(num_frames * conf.train_set_ratio)]
         if split == "valid":
-            self.frame_index = self.frame_index[:int(num_frames * conf.valid_set_ratio)]
+            self.frame_index = self.frame_index[int(num_frames * conf.train_set_ratio):]
 
         # class name and label index
         self.cls2ldx = {v: i for (i, v) in enumerate(conf.kitti_obj3d_det_cls_names)}
