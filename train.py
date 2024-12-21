@@ -25,7 +25,7 @@ def main():
         dataset=core.dataset.KITTISpherical(
             "data", "train", conf_dataset
         ),
-        batch_size=conf_dataset.batch_size,
+        batch_size=conf_trainer.batch_size,
         shuffle=True,
         num_workers=4
     )
@@ -34,14 +34,14 @@ def main():
         dataset=core.dataset.KITTISpherical(
             "data", "valid", conf_dataset
         ),
-        batch_size=conf_dataset.batch_size,
+        batch_size=conf_trainer.batch_size,
         shuffle=True,
         num_workers=4
     )
 
     model = core.model.squeezeseg.SqueezeSeg(
         in_channels=conf_model.in_channels,
-        out_channels=conf_model.out_channels,
+        out_channels=conf_model.num_classes,
         conf=conf_model
     )
 
@@ -49,10 +49,12 @@ def main():
         model,
         train_dataloader=train_dataloader,
         valid_dataloader=valid_dataloader,
-        cls_weight=None,
-        ignore_cls=conf_dataset.ignore_cls,
-        log_alldir=conf_trainer.log_alldir,
+        cls_weight=conf_trainer.cls_weight,
+        ignore_cls=conf_trainer.ignore_cls,
+        bkgcls_idx=conf_trainer.bkgcls_idx,
         num_epochs=conf_trainer.num_epochs,
+        log_alldir=conf_trainer.log_alldir,
+        log_exname=conf_trainer.exp_name,
         log_interv=conf_trainer.log_interv
     )
 
