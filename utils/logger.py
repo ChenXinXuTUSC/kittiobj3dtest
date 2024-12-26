@@ -19,7 +19,7 @@ def get_logger(logger_name: str, to_file: bool=False, log_file: str=""):
 
     # 创建一个格式化器，定义日志的输出格式
     formatter = logging.Formatter(
-        '[%(asctime)s|%(name)s|%(levelname)s]: %(message)s',
+        '[%(asctime)s|%(name)s|%(levelname)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 

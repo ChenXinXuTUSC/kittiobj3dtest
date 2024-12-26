@@ -4,3 +4,5 @@ log/
 results/
 *.out
 *.err
+notebook/hub/
+hub/

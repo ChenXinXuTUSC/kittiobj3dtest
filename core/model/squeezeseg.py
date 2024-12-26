@@ -89,6 +89,7 @@ class SqueezeSeg(nn.Module):
         # where is CRF refine RNN layer ?
 
     def forward(self, x):                           # [N,   5, 64, 512]
+        # U-Net(FCN)
         conv1_out   = self.conv1(x)                 # [N,  64, 32, 256]
         skip1_out   = self.conv1_skip(x)            # [N,  64, 64, 512]
         pool1_out   = self.pool1(conv1_out)         # [N,  64, 16, 128]
