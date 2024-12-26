@@ -29,7 +29,7 @@ def save_pcd(points: np.ndarray, colors: np.ndarray=None, ds_size: float=0.05, o
     o3d.io.write_point_cloud(f"{out_name}.ply", pcd_ds)
 
 
-def fill_blank(img: np.ndarray, trh: float, num_valid: int):
+def fill_blank(img: np.ndarray, target_val: float, err: float, num_valid: int):
     IMG_H, IMG_W = img.shape
 
     img_filled = np.copy(img)
@@ -54,13 +54,13 @@ def fill_blank(img: np.ndarray, trh: float, num_valid: int):
 
     for i in range(IMG_H):
         for j in range(IMG_W):
-            if img[i][j] >= trh:
+            if abs(img[i][j] - target_val) >= err:
                 continue
             pix = []
             for d in dirs:
                 u = i + d[0]
                 v = j + d[1]
-                if in_bound(u, v) and img[u][v] > trh:
+                if in_bound(u, v) and img[u][v] > err:
                     pix.append(img[u][v])
             if len(pix) >= num_valid:
                 img_filled[i][j] = sum(pix) / len(pix)
@@ -76,7 +76,6 @@ def normalized_fmap(fmap: np.ndarray, cidx: list):
     """
     
     # 对每个通道进行归一化
-    normalized_feature_map = np.zeros_like(fmap, dtype=np.float32)
     for c in cidx:
         # 获取当前通道的特征图
         channel = fmap[c]
@@ -92,9 +91,9 @@ def normalized_fmap(fmap: np.ndarray, cidx: list):
             normalized_channel = np.zeros_like(channel, dtype=np.float32)
         
         # 将归一化后的通道赋值回特征图
-        normalized_feature_map[c] = normalized_channel
+        fmap[c] = normalized_channel
     
-    return normalized_feature_map
+    return fmap
 
 
 pallete = {
