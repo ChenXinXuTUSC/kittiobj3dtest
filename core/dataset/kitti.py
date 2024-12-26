@@ -44,7 +44,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
 
     def __getitem__(self, index):
         fmap, gdth, rmap = self.__spherical_project(index)
-        fmap = utils.normalized_fmap(fmap, [3, 4])
+        fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
         # do smooth on range and intensity channel
         fmap[0] = utils.fill_blank(fmap[0], 0, 1e-4, 4)
         fmap[1] = utils.fill_blank(fmap[1], 0, 1e-4, 4)

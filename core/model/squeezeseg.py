@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+from . import register_model
+
+
 class FireConv(nn.Module):
     def __init__(self, in_channels, sq1x1, ex1x1, ex3x3, freeze=False, stddev=0.001):
         super(FireConv, self).__init__()
@@ -57,6 +60,7 @@ class FireDeconv(nn.Module):
         return weight
     
 
+@register_model
 class SqueezeSeg(nn.Module):
     def __init__(
         self,
