@@ -46,11 +46,13 @@ class Trainer:
         if not osp.exists(tfx_logdir):
             os.makedirs(tfx_logdir, exist_ok=True)
         self.tfx_logger = SummaryWriter(log_dir=tfx_logdir)
-        
         self.txt_logger = utils.get_logger(
             log_exname, True,
-            osp.join(log_alldir, "log.txt")
+            osp.join(log_alldir, "run.log")
         )
+        self.ckpt_saved = osp.join(log_alldir, "ckpt")
+        if not osp.exists(self.ckpt_saved):
+            os.makedirs(self.ckpt_saved, exist_ok=True)
 
 
         self.num_epochs = num_epochs
@@ -58,12 +60,13 @@ class Trainer:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        self.best_macc = -1.0
+
 
     def train(self):
         self.txt_logger.info(f"CELoss weight: {self.cls_weight}, ignore_cls: {self.ignore_cls}")
 
         model = self.model.to(self.device)
-
         optimizer = torch.optim.Adam(model.parameters())
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
         criterion = torch.nn.CrossEntropyLoss(
@@ -93,8 +96,7 @@ class Trainer:
 
                 loss = loss.item()
                 epoch_loss += loss
-                # accu = (torch.argmax(pred, dim=1) == gdth).float()
-                # accu = accu[gdth != 0].mean().item()
+            
                 acc, rec, iou = self.compute_metrics(pred, gdth)
                 for k, v in acc.items():
                     epoch_macc[k].append(v)
@@ -115,47 +117,8 @@ class Trainer:
                             "iou": iou  # already a dict
                         }, epoch=epoch, iter=batch_idx, to_tfb=True, tfx_tag="train"
                     )
-                    # self.txt_logger.info(
-                    #     f"train [{epoch+1}/{self.num_epochs} {batch_idx / len(self.train_dataloader):.2f}] " + \
-                    #     f"loss: {loss:.3f} " + \
-                    #     f"macc: {acc.mean():.3f} " + \
-                    #     f"mrec: {rec.mean():.3f} " + \
-                    #     f"miou: {iou.mean():.3f} "
-                    # )
-                    # self.tfx_logger.add_scalar(
-                    #     tag="train/loss", scalar_value=loss,
-                    #     global_step=epoch * len(self.train_dataloader) + batch_idx
-                    # )
-                    # self.tfx_logger.add_scalar(
-                    #     tag="train/macc", scalar_value=acc.mean(),
-                    #     global_step=epoch * len(self.train_dataloader) + batch_idx
-                    # )
-                    # self.tfx_logger.add_scalars(
-                    #     main_tag="train/acc",
-                    #     tag_scalar_dict={f"acc_{i}": acc[i] for i in range(acc.shape[0])},
-                    #     global_step=epoch * len(self.train_dataloader) + batch_idx
-                    # )
 
-                    # visualize pred and gdth mask image
-                    fmap_img = fmap[0][3].cpu().numpy()
-                    pred_img = torch.argmax(pred[0], dim=0).cpu().numpy()
-                    gdth_img = gdth[0].cpu().numpy()
-
-                    # add color
-                    pred_img = utils.visualize_fmap(pred_img)
-                    gdth_img = utils.visualize_fmap(gdth_img)
-                    self.tfx_logger.add_image(
-                        tag="train/fmap_img", img_tensor=fmap_img, dataformats="HW",
-                        global_step=epoch * len(self.train_dataloader) + batch_idx
-                    )
-                    self.tfx_logger.add_image(
-                        tag="train/pred_img", img_tensor=pred_img, dataformats="HWC",
-                        global_step=epoch * len(self.train_dataloader) + batch_idx
-                    )
-                    self.tfx_logger.add_image(
-                        tag="train/gdth_img", img_tensor=gdth_img, dataformats="HWC",
-                        global_step=epoch * len(self.train_dataloader) + batch_idx
-                    )
+                    self.log_images(fmap, pred, gdth, epoch, batch_idx)
 
             epoch_loss /= len(self.train_dataloader)
             for k, v in epoch_macc.items():
@@ -170,16 +133,15 @@ class Trainer:
                     "epoch_macc": epoch_macc,
                     "epoch_mrec": epoch_mrec,
                     "epoch_miou": epoch_miou,
-                }, epoch=epoch + 1, iter=0, tfx_tag="train"
+                }, epoch=epoch, iter=len(self.train_dataloader), tfx_tag="train"
             )
 
-            # self.valid(epoch)
+            self.valid(epoch)
 
             scheduler.step()
 
 
     def valid(self, epoch: int):
-
         criterion = torch.nn.CrossEntropyLoss(
             weight=self.cls_weight,
             ignore_index=self.ignore_cls
@@ -188,9 +150,9 @@ class Trainer:
         model.eval()
         with torch.no_grad():
             valid_loss = 0.0
-            valid_macc = 0.0
-            valid_mrec = 0.0
-            valid_miou = 0.0
+            valid_macc = defaultdict(list)
+            valid_mrec = defaultdict(list)
+            valid_miou = defaultdict(list)
 
             for batch_idx, (fmap, gdth) in enumerate(self.valid_dataloader):
                 fmap = fmap.to(device=self.device).float()
@@ -200,37 +162,47 @@ class Trainer:
                 loss = criterion(pred, gdth)
 
                 loss = loss.item()
-                # accu = (torch.argmax(pred, dim=1) == gdth).float()
-                # accu = accu[gdth != 0].mean().item()
-                acc, rec, iou = self.compute_metrics(
-                    pred, gdth,
-                    self.train_dataloader.dataset.num_classes
-                )
-                valid_macc += acc
-                valid_mrec += rec
-                valid_miou += iou
                 valid_loss += loss
-                
+
+                acc, rec, iou = self.compute_metrics(pred, gdth)
+                for k, v in acc.items():
+                    valid_macc[k].append(v)
+                for k, v in rec.items():
+                    valid_mrec[k].append(v)
+                for k, v in iou.items():
+                    valid_miou[k].append(v)
 
                 if (batch_idx + 1) % self.log_interv == 0:
                     self.log_metrics(
                         metric_dict={
                             "loss": loss,
-                            "macc": acc.mean(),
-                            "mrec": rec.mean(),
-                            "miou": iou.mean()
-                        }, epoch=epoch, iter=batch_idx, to_tfb=False, tag="valid"
+                            "macc": sum([v for v in acc.values()]) / len(acc),
+                            "mrec": sum([v for v in rec.values()]) / len(rec),
+                            "miou": sum([v for v in iou.values()]) / len(iou),
+                        }, epoch=epoch, iter=batch_idx, to_tfb=False, tfx_tag="valid"
                     )
+            
             valid_loss /= len(self.valid_dataloader)
-            valid_macc /= len(self.valid_dataloader)
-            valid_mrec /= len(self.valid_dataloader)
-            valid_miou /= len(self.valid_dataloader)
+            for k, v in valid_macc.items():
+                valid_macc[k] = sum(v) / len(v)
+            for k, v in valid_mrec.items():
+                valid_mrec[k] = sum(v) / len(v)
+            for k, v in valid_miou.items():
+                valid_miou[k] = sum(v) / len(v)
             self.log_metrics(
                 metric_dict={
-                    "loss": valid_loss / len(self.valid_dataloader),
-                    "macc": valid_macc / len(self.valid_dataloader),
-                }, epoch=epoch, iter=batch_idx, to_tfb=True, tag="valid"
+                    "epoch_mlss": valid_loss,
+                    "epoch_macc": valid_macc,
+                    "epoch_mrec": valid_mrec,
+                    "epoch_miou": valid_miou,
+                }, epoch=epoch, iter=len(self.train_dataloader), to_tfb=True, tfx_tag="valid"
             )
+
+            curr_macc = sum([v for v in valid_macc.values()]) / len(valid_macc)
+            if curr_macc > self.best_macc:
+                self.txt_logger.info(f"best model saved with macc: {curr_macc:.3f}")
+                self.best_macc = curr_macc
+                torch.save(self.model.state_dict(), osp.join(self.ckpt_saved, "best.pth"))
     
 
     def compute_metrics(self, pred, gdth):
@@ -262,7 +234,7 @@ class Trainer:
             iou[c] = tp / ((tp + fn) + fp)
 
         return acc, rec, iou
-    
+
 
     def log_metrics(
             self, metric_dict: dict,
@@ -289,3 +261,28 @@ class Trainer:
                 self.tfx_logger.add_scalar(f"{tfx_tag}/{k}", v, global_step)
             self.tfx_logger.flush()
 
+
+    def log_images(
+            self, data: torch.Tensor, pred: torch.Tensor, gdth: torch.Tensor,
+            epoch: int, iter: int
+        ):
+        # visualize pred and gdth mask image
+        fmap_img = data[0][3].cpu().numpy()
+        pred_img = torch.argmax(pred[0], dim=0).cpu().numpy()
+        gdth_img = gdth[0].cpu().numpy()
+
+        # add color
+        pred_img = utils.visualize_fmap(pred_img)
+        gdth_img = utils.visualize_fmap(gdth_img)
+        self.tfx_logger.add_image(
+            tag="train/fmap_img", img_tensor=fmap_img, dataformats="HW",
+            global_step=epoch * len(self.train_dataloader) + iter
+        )
+        self.tfx_logger.add_image(
+            tag="train/pred_img", img_tensor=pred_img, dataformats="HWC",
+            global_step=epoch * len(self.train_dataloader) + iter
+        )
+        self.tfx_logger.add_image(
+            tag="train/gdth_img", img_tensor=gdth_img, dataformats="HWC",
+            global_step=epoch * len(self.train_dataloader) + iter
+        )
