@@ -2,7 +2,8 @@ data/
 __pycache__/
 log/
 results/
-*.out
-*.err
 notebook/hub/
 hub/
+*.out
+*.err
+*.ipynb

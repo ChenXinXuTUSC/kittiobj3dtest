@@ -1,4 +1,5 @@
 import os
+os.environ["TORCH_HOME"] = "."
 import os.path as osp
 import argparse
 
@@ -39,14 +40,13 @@ def main():
         num_workers=4
     )
 
-    model = core.model.squeezeseg.SqueezeSeg(
+    model = core.model.MODEL["DeepLabV3"](
         in_channels=conf_model.in_channels,
-        out_channels=conf_model.num_classes,
-        conf=conf_model
+        out_channels=conf_model.num_classes
     )
 
     trainer = core.pipe.Trainer(
-        model,
+        model=model,
         train_dataloader=train_dataloader,
         valid_dataloader=valid_dataloader,
         cls_weight=conf_trainer.cls_weight,

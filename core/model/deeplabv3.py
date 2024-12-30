@@ -13,22 +13,26 @@ from . import register_model
 
 @register_model
 class DeepLabV3(nn.Module):
-    def __init__(self, num_cls: int, stretch_shape: tuple, in_channels: int):
+    def __init__(self, in_channels: int, out_channels: int):
         super(DeepLabV3, self).__init__()
         
-        self.stretch = nn.Upsample(size=stretch_shape, mode='bilinear', align_corners=True)
-        self.squeeze = nn.Conv2d(in_channels, 3, kernel_size=1, stride=1, padding=0)
+        self.squeeze = None
+        if in_channels != 3:
+            self.squeeze = nn.Conv2d(in_channels, 3, kernel_size=1, stride=1, padding=0)
 
-        self.deeplab = torch.hub.load('hub/deeplabv3', source="local", model='deeplabv3_resnet50', pretrained=True)
-        self.deeplab.classifier[-1] = nn.Conv2d(256, num_cls, kernel_size=(1, 1), stride=(1, 1))
-        self.deeplab.aux_classifier[-1] = nn.Conv2d(256, num_cls, kernel_size=(1, 1), stride=(1, 1))
+        self.deeplab = torch.hub.load("hub/deeplabv3", source="local", model='deeplabv3_resnet50', pretrained=True)
+        self.deeplab.classifier[-1] = nn.Conv2d(256, out_channels, kernel_size=(1, 1), stride=(1, 1))
+        self.deeplab.aux_classifier[-1] = nn.Conv2d(256, out_channels, kernel_size=(1, 1), stride=(1, 1))
     
     def forward(self, x: torch.Tensor):
-        original_shape = x.shape[2:]
-        x = self.stretch(x)
-        x = self.squeeze(x)
+        old_shape = x.shape[2:]
+
+        x = F.interpolate(x, scale_factor=((224-1)/old_shape[0]+1, (224-1)/old_shape[1]+1), mode="bilinear", align_corners=True)
+        if self.squeeze is not None:
+            x = self.squeeze(x)
+        
         x = self.deeplab(x)
-        return (
-            F.upsample(x["out"], size=original_shape, mode="bilinear", align_corners=True),
-            F.upsample(x["aux"], size=original_shape, mode="bilinear", align_corners=True)
+        return ( # keep the same if x not strethced
+            F.interpolate(x["out"], size=old_shape, mode="bilinear", align_corners=True),
+            F.interpolate(x["aux"], size=old_shape, mode="bilinear", align_corners=True)
         )

@@ -66,7 +66,6 @@ class SqueezeSeg(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        conf: dict = None,
     ):
         super(SqueezeSeg, self).__init__()
         self.num_classes = out_channels
@@ -88,7 +87,7 @@ class SqueezeSeg(nn.Module):
         self.deconv11    = FireDeconv(256, 32,  64,  64, factors=[2, 2])
         self.deconv12    = FireDeconv(128, 16,  32,  32, factors=[2, 2])
         self.deconv13    = FireDeconv( 64, 16,  32,  32, factors=[2, 2])
-        self.drop13      = nn.Dropout2d(p=conf.dropout)
+        self.drop13      = nn.Dropout2d(p=0.50)
         self.conv14_prob = nn.Conv2d(64, out_channels, kernel_size=3, stride=1, padding=1)
         # where is CRF refine RNN layer ?
 
