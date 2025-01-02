@@ -10,19 +10,20 @@ import easydict
 
 import utils
 
-
-class KITTISpherical(torch.utils.data.dataset.Dataset):
-    def __init__(self, kitti_root: str, split: str, conf):
+from . import register_dataset
+@register_dataset
+class KITTIObj3d(torch.utils.data.dataset.Dataset):
+    def __init__(self, root: str, split: str, conf):
         super().__init__()
         # kitti doesn't provide ground truth for test set
         assert split == "train" or split == "valid", "invalid split"
-        assert osp.exists(kitti_root), "dataset root not exist"
+        assert osp.exists(root), f"dataset root {root} not exist"
 
-        self.kitti_root = kitti_root
+        self.root = root
         self.conf = conf
 
         num_frames = len([
-            x for x in os.listdir(osp.join(kitti_root, "training", "velodyne")) if x.endswith(".bin")
+            x for x in os.listdir(osp.join(root, "training", "velodyne")) if x.endswith(".bin")
         ])
         self.frame_index = list(range(num_frames))
 
@@ -61,7 +62,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
 
         # step 1 - read lidar points
         bin_path = osp.join(
-            self.kitti_root, "training", "velodyne", f"{index}.bin"
+            self.root, "training", "velodyne", f"{index}.bin"
         )
         bin_size = osp.getsize(bin_path)
         assert bin_size % 16 == 0, "invalid binary structure for kitti bin"
@@ -94,7 +95,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         label_list = None
         with open(
             osp.join(
-                self.kitti_root,
+                self.root,
                 "training",
                 "label_2",
                 f"{index}.txt"),
@@ -115,7 +116,7 @@ class KITTISpherical(torch.utils.data.dataset.Dataset):
         calib = None
         with open(
             osp.join(
-                self.kitti_root,
+                self.root,
                 "training",
                 "calib",
                 f"{index}.txt",
