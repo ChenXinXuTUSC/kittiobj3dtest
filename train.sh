@@ -1,6 +1,6 @@
 #!/bin/bash
 
 python train.py \
---conf_data_yaml conf/data.yaml \
---conf_model_yaml conf/model.yaml \
---conf_trainer_yaml conf/trainer.yaml \
+--conf_datad_yaml conf/data/kittiobj3d.yaml \
+--conf_model_yaml conf/model/model.yaml \
+--conf_train_yaml conf/pipe/deeplab+kittiobj3d.yaml \

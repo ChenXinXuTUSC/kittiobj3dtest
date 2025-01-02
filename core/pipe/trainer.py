@@ -26,10 +26,11 @@ class Trainer:
         ignore_cls: int, # don't ignore the background class
         bkgcls_idx: int, # should be the background class index
         num_epochs: int,
-        log_alldir: str,
         log_exname: str,
+        log_alldir: str,
         log_interv: int = 10
     ):
+        # model and data
         self.model = model
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
@@ -40,6 +41,8 @@ class Trainer:
         self.ignore_cls = ignore_cls
         self.bkgcls_idx = bkgcls_idx
 
+        # log staff
+        self.log_interv = log_interv
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         log_alldir = osp.join(log_alldir, log_exname, timestamp)
         tfx_logdir = osp.join(log_alldir, "tfx")
@@ -54,19 +57,16 @@ class Trainer:
         if not osp.exists(self.ckpt_saved):
             os.makedirs(self.ckpt_saved, exist_ok=True)
 
-
+        # misc
         self.num_epochs = num_epochs
-        self.log_interv = log_interv
-
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        self.best_macc = -1.0
+        self.best_miou = -1.0
 
 
     def train(self):
         model = self.model
-        if torch.cuda.device_count() > 1:
-            model = torch.nn.parallel.DataParallel(self.model)
+        # if torch.cuda.device_count() > 1:
+        #     model = torch.nn.parallel.DataParallel(self.model)
         model = model.to(self.device)
         optimizer = torch.optim.Adam(model.parameters())
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
@@ -75,8 +75,8 @@ class Trainer:
             ignore_index=self.ignore_cls
         ).to(self.device)
 
+        self.txt_logger.info("start training...")
         self.txt_logger.info(f"CELoss weight: {self.cls_weight}, ignore_cls: {self.ignore_cls}")
-        self.txt_logger.info("Start training...")
         model.train()
         for epoch in range(self.num_epochs):
             epoch_loss = 0.0
@@ -88,10 +88,7 @@ class Trainer:
                 fmap = fmap.to(self.device).float()
                 gdth = gdth.to(self.device).long()
 
-                pred, pred_aux = model(fmap)
-                loss_out = criterion(pred, gdth)
-                loss_aux = criterion(pred_aux, gdth)
-                loss = loss_out + 0.5 * loss_aux
+                loss, pred = model(fmap, gdth, criterion)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -159,10 +156,7 @@ class Trainer:
                 fmap = fmap.to(device=self.device).float()
                 gdth = gdth.to(device=self.device).long()
 
-                pred, pred_aux = model(fmap)
-                loss_out = criterion(pred, gdth)
-                loss_aux = criterion(pred_aux, gdth)
-                loss = loss_out + 0.5 * loss_aux
+                loss, pred = model(fmap, gdth, criterion)
 
                 loss = loss.item()
                 valid_loss += loss
@@ -202,10 +196,10 @@ class Trainer:
                 }, epoch=epoch, iter=len(self.train_dataloader), to_tfb=True, tfx_tag="valid"
             )
 
-            curr_macc = sum([v for v in valid_macc.values()]) / len(valid_macc)
-            if curr_macc > self.best_macc:
-                self.txt_logger.info(f"best model saved with macc: {curr_macc:.3f}")
-                self.best_macc = curr_macc
+            curr_miou = sum([v for v in valid_miou.values()]) / len(valid_miou)
+            if curr_miou > self.best_macc:
+                self.txt_logger.info(f"best model saved with macc: {curr_miou:.3f}")
+                self.best_macc = curr_miou
                 torch.save(self.model.state_dict(), osp.join(self.ckpt_saved, "best.pth"))
     
 

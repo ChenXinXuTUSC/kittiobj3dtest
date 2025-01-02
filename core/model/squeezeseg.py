@@ -6,7 +6,7 @@ from . import register_model
 
 class FireConv(nn.Module):
     def __init__(self, in_channels, sq1x1, ex1x1, ex3x3, freeze=False, stddev=0.001):
-        super(FireConv, self).__init__()
+        super().__init__()
         self.sq1x1 = nn.Conv2d(in_channels, sq1x1, kernel_size=1, stride=1, padding=0)
         self.ex1x1 = nn.Conv2d(sq1x1,       ex1x1, kernel_size=1, stride=1, padding=0)
         self.ex3x3 = nn.Conv2d(sq1x1,       ex3x3, kernel_size=3, stride=1, padding=1) # keep output the original shape
@@ -26,7 +26,7 @@ class FireConv(nn.Module):
 
 class FireDeconv(nn.Module):
     def __init__(self, in_channels, sq1x1, ex1x1, ex3x3, factors=[2, 2], freeze=False, stddev=0.001):
-        super(FireDeconv, self).__init__()
+        super().__init__()
         self.sq1x1 = nn.Conv2d(in_channels, sq1x1, kernel_size=1, stride=1, padding=0)
         ksize_h = factors[0]
         ksize_w = factors[1]
@@ -67,7 +67,7 @@ class SqueezeSeg(nn.Module):
         in_channels: int,
         out_channels: int,
     ):
-        super(SqueezeSeg, self).__init__()
+        super().__init__()
         self.num_classes = out_channels
 
         self.conv1       = nn.Conv2d(in_channels, 64, kernel_size=3, stride=2, padding=1)
@@ -91,10 +91,10 @@ class SqueezeSeg(nn.Module):
         self.conv14_prob = nn.Conv2d(64, out_channels, kernel_size=3, stride=1, padding=1)
         # where is CRF refine RNN layer ?
 
-    def forward(self, x):                           # [N,   5, 64, 512]
+    def forward(self, data: torch.Tensor, gdth: torch.Tensor, criterion: nn.Module):                           # [N,   5, 64, 512]
         # U-Net(FCN)
-        conv1_out   = self.conv1(x)                 # [N,  64, 32, 256]
-        skip1_out   = self.conv1_skip(x)            # [N,  64, 64, 512]
+        conv1_out   = self.conv1(data)              # [N,  64, 32, 256]
+        skip1_out   = self.conv1_skip(data)         # [N,  64, 64, 512]
         pool1_out   = self.pool1(conv1_out)         # [N,  64, 16, 128]
         conv2_out   = self.conv2(pool1_out)         # [N, 128, 16, 128]
         conv3_out   = self.conv3(conv2_out)         # [N, 256, 16, 128]
@@ -118,4 +118,14 @@ class SqueezeSeg(nn.Module):
         conv14_prob = self.conv14_prob(drop13_out)
         # bilateral_filter_weights = self._bilateral_filter_layer(self.lidar_input[:, :, :, :3])
         # output_prob = self._recurrent_crf_layer(conv14_prob, bilateral_filter_weights)
-        return conv14_prob
+
+        loss = self.loss_fn(conv14_prob, gdth, criterion)
+        pred = self.predict(conv14_prob)
+
+        return loss, pred
+
+    def loss_fn(self, pred, gdth: torch.Tensor, criterion: torch.nn.Module):
+        return criterion(pred, gdth)
+    
+    def predict(self, model_out):
+        return model_out
