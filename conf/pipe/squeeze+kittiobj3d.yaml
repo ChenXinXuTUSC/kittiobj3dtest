@@ -1,0 +1,16 @@
+exp_name: "squeezeseg+kittiobj3d"
+
+model: "SqueezeSeg"
+dataset: "KITTIObj3d"
+
+lr: 0.001
+batch_size: 8
+num_epochs: 50
+
+cls_weight: [0.125, 1.2, 1.1, 0.5, 1.5, 1.0, 1.0, 1.2, 1.2]
+ignore_cls: -1
+bkgcls_idx: 0
+bg_clsname: "DontCare"
+
+log_alldir: "log"
+log_interv: 10
