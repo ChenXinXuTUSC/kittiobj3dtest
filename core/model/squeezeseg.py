@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 
-from . import register_model
+import easydict
+
+from . import MODEL
 
 
 class FireConv(nn.Module):
@@ -60,14 +62,16 @@ class FireDeconv(nn.Module):
         return weight
     
 
-@register_model
+@MODEL.register
 class SqueezeSeg(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-    ):
+    def __init__(self, *args, **kwds):
         super().__init__()
+        kwds = easydict.EasyDict(kwds)
+        self.args = kwds
+
+        in_channels = kwds.in_channels
+        out_channels = kwds.num_classes
+
         self.num_classes = out_channels
 
         self.conv1       = nn.Conv2d(in_channels, 64, kernel_size=3, stride=2, padding=1)
@@ -87,11 +91,11 @@ class SqueezeSeg(nn.Module):
         self.deconv11    = FireDeconv(256, 32,  64,  64, factors=[2, 2])
         self.deconv12    = FireDeconv(128, 16,  32,  32, factors=[2, 2])
         self.deconv13    = FireDeconv( 64, 16,  32,  32, factors=[2, 2])
-        self.drop13      = nn.Dropout2d(p=0.50)
+        self.drop13      = nn.Dropout2d(p=self.args.dropout)
         self.conv14_prob = nn.Conv2d(64, out_channels, kernel_size=3, stride=1, padding=1)
         # where is CRF refine RNN layer ?
 
-    def forward(self, data: torch.Tensor, gdth: torch.Tensor, criterion: nn.Module):                           # [N,   5, 64, 512]
+    def forward(self, data: torch.Tensor):                           # [N,   5, 64, 512]
         # U-Net(FCN)
         conv1_out   = self.conv1(data)              # [N,  64, 32, 256]
         skip1_out   = self.conv1_skip(data)         # [N,  64, 64, 512]
@@ -119,13 +123,4 @@ class SqueezeSeg(nn.Module):
         # bilateral_filter_weights = self._bilateral_filter_layer(self.lidar_input[:, :, :, :3])
         # output_prob = self._recurrent_crf_layer(conv14_prob, bilateral_filter_weights)
 
-        loss = self.loss_fn(conv14_prob, gdth, criterion)
-        pred = self.predict(conv14_prob)
-
-        return loss, pred
-
-    def loss_fn(self, pred, gdth: torch.Tensor, criterion: torch.nn.Module):
-        return criterion(pred, gdth)
-    
-    def predict(self, model_out):
-        return model_out
+        return conv14_prob
