@@ -10,33 +10,37 @@ import easydict
 
 import utils
 
-from . import register_dataset
-@register_dataset
-class KITTIObj3d(torch.utils.data.dataset.Dataset):
-    def __init__(self, root: str, split: str, conf):
-        super().__init__()
-        # kitti doesn't provide ground truth for test set
-        assert split == "train" or split == "valid", "invalid split"
-        assert osp.exists(root), f"dataset root {root} not exist"
+from . import DATASET
 
-        self.root = root
-        self.conf = conf
+
+@DATASET.register
+class KITTIObj3d(torch.utils.data.dataset.Dataset):
+    def __init__(self, *args, **kwds):
+        super().__init__()
+        kwds = easydict.EasyDict(kwds)
+        self.args = kwds
+
+        self.root = self.args.root
+        self.split = self.args.split
+        # kitti doesn't provide ground truth for test set
+        assert osp.exists(self.root), f"dataset root {self.root} not exist"
+        assert self.split == "train" or self.split == "valid", "invalid split"
 
         num_frames = len([
-            x for x in os.listdir(osp.join(root, "training", "velodyne")) if x.endswith(".bin")
+            x for x in os.listdir(osp.join(self.root, "training", "velodyne")) if x.endswith(".bin")
         ])
         self.frame_index = list(range(num_frames))
 
-        if split == "train":
-            self.frame_index = self.frame_index[:int(num_frames * conf.train_set_ratio)]
-        if split == "valid":
-            self.frame_index = self.frame_index[int(num_frames * conf.train_set_ratio):]
+        if self.split == "train":
+            self.frame_index = self.frame_index[:int(num_frames * self.args.train_set_ratio)]
+        if self.split == "valid":
+            self.frame_index = self.frame_index[int(num_frames * self.args.train_set_ratio):]
 
         # class name and label index
-        self.cls2ldx = {v: i for (i, v) in enumerate(conf.kitti_obj3d_det_cls_names)}
+        self.cls2ldx = {v: i for (i, v) in enumerate(self.args.kitti_obj3d_det_cls_names)}
         self.ldx2cls = {i: v for (v, i) in self.cls2ldx.items()}
 
-        self.num_cls = len(conf.kitti_obj3d_det_cls_names)
+        self.num_cls = len(self.args.kitti_obj3d_det_cls_names)
 
 
     def __len__(self) -> int:
@@ -109,7 +113,7 @@ class KITTIObj3d(torch.utils.data.dataset.Dataset):
         
         label_list = [
             easydict.EasyDict(
-                {field:value for (field, value) in zip(self.conf.label_field_name_list, item)}
+                {field:value for (field, value) in zip(self.args.label_field_name_list, item)}
             ) for item in item_list
         ]
 
@@ -176,8 +180,8 @@ class KITTIObj3d(torch.utils.data.dataset.Dataset):
         x = np.arcsin(points[mask, 1] / np.linalg.norm(points[mask, :2], axis=1))
         y = np.arcsin(points[mask, 2] / np.linalg.norm(points[  mask  ], axis=1))
 
-        field_x_range, res_x = np.pi / 2               , self.conf.proj_img_w
-        filed_y_range, res_y = y.max() - y.min() + 1e-2, self.conf.proj_img_h
+        field_x_range, res_x = np.pi / 2               , self.args.proj_img_w
+        filed_y_range, res_y = y.max() - y.min() + 1e-2, self.args.proj_img_h
 
         delta_x = field_x_range / res_x
         delta_y = filed_y_range / res_y
@@ -188,9 +192,9 @@ class KITTIObj3d(torch.utils.data.dataset.Dataset):
         x = x - x.min()
         y = y - y.min()
 
-        gdth = np.zeros((self.conf.proj_img_h, self.conf.proj_img_w))
-        fmap = np.zeros((5, self.conf.proj_img_h, self.conf.proj_img_w))
-        rmap = [[[] for _ in range(self.conf.proj_img_w)] for _ in range(self.conf.proj_img_h)]
+        gdth = np.zeros((self.args.proj_img_h, self.args.proj_img_w))
+        fmap = np.zeros((5, self.args.proj_img_h, self.args.proj_img_w))
+        rmap = [[[] for _ in range(self.args.proj_img_w)] for _ in range(self.args.proj_img_h)]
 
         # feature vector [x, y, z, r, i], shape [C, H, W]
         # as there might be multiple points projected into one grid
