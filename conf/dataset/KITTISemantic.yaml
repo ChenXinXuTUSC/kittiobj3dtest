@@ -1,0 +1,6 @@
+root: "data/kittisem"
+
+train_set_ratio: 0.7
+valid_set_ratio: 0.3
+
+seq_list: ["00", "01", "02"]
