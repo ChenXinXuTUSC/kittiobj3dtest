@@ -1,5 +1,3 @@
-from . import METRIC
-
 import torch
 
 import easydict
@@ -7,6 +5,7 @@ from collections import defaultdict
 
 import utils
 
+from . import METRIC
 @METRIC.register
 class DeepLabV3Metric:
     def __init__(self, *args, **kwds):
@@ -49,13 +48,22 @@ class DeepLabV3Metric:
         logger.txt.info(" ".join([
             str(x) for x in [
                 prefix,
-                "mean_iou", f"{mean_iou:.3f}",
-                "iou:", iou,
-                "acc:", acc,
-                "rec:", rec,
-                misc_metrics
+                "loss", f"{misc_metrics['loss']:.3f}",
+                "miou", f"{mean_iou:.3f}",
+                "iou", iou,
+                "acc", acc,
+                "rec", rec
             ]
         ]))
+
+        iou = {f"{k}": v for k, v in iou.items()}
+        acc = {f"{k}": v for k, v in acc.items()}
+        rec = {f"{k}": v for k, v in rec.items()}
+        logger.tfx.add_scalar(tag=f"{tag}/miou", scalar_value=mean_iou, global_step=step)
+        logger.tfx.add_scalar(tag=f"{tag}/loss", scalar_value=misc_metrics["loss"], global_step=step)
+        logger.tfx.add_scalars(main_tag=f"{tag}/iou", tag_scalar_dict=iou, global_step=step)
+        logger.tfx.add_scalars(main_tag=f"{tag}/acc", tag_scalar_dict=acc, global_step=step)
+        logger.tfx.add_scalars(main_tag=f"{tag}/rec", tag_scalar_dict=rec, global_step=step)
     
     def reset(self):
         self.all_iou = defaultdict(list)

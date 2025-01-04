@@ -2,9 +2,7 @@ import os
 import os.path as osp
 import sys
 
-import core.metric
 sys.path.append("..")
-from datetime import datetime
 
 import torch
 import torch.utils.data
@@ -12,12 +10,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
-from torch.utils.tensorboard import SummaryWriter
-
-from collections import defaultdict
 
 import utils
-import core
 
 class Trainer:
     def __init__(
@@ -61,6 +55,8 @@ class Trainer:
         self.log_interv = log_interv
         self.log_alldir = log_alldir
         self.log_exname = log_exname
+
+        print(device_mod, world_size)
 
     def ddp_setup(self, world_rank: int, world_size: int):
         os.environ['MASTER_ADDR'] = 'localhost'
@@ -171,7 +167,7 @@ class Trainer:
                         self.loggertfx, data, pred, gdth,
                         prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
                         tag="train", step=epoch * len(self.train_dataloader) + iter,
-                        loss=f"{loss.item():.3f}"
+                        loss=loss.item()
                     )
 
             self.valid(epoch)

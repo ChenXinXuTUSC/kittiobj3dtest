@@ -1,4 +1,4 @@
 import utils.registry
 METRIC = utils.registry.Registry("METRIC")
 
-from .deeplabv3 import *
+from .deeplabv3 import DeepLabV3Metric
