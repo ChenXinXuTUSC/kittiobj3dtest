@@ -9,6 +9,7 @@ import torch
 import torch.utils.data
 
 import core
+import utils
 
 parser = argparse.ArgumentParser("train.py")
 parser.add_argument("--conf", type=str, help="main configuration yaml file path")
@@ -32,11 +33,7 @@ def main():
 
     criterion = core.loss.LOSS[conf_main.loss.cls_name](**args_loss)
 
-    metriclog = core.metric.METRIC[conf_main.metric.cls_name](
-        **args_metric,
-        log_dir=conf_main.log_alldir,
-        log_exname=conf_main.exp_name
-    )
+    metriclog = core.metric.METRIC[conf_main.metric.cls_name](**args_metric)
 
     trainer = core.pipe.Trainer(
         device_mod="cuda" if torch.cuda.is_available() else "cpu",
@@ -44,12 +41,14 @@ def main():
         model=model,
         train_dataset=train_dataset,
         valid_dataset=valid_dataset,
-        num_epochs=conf_main.num_epochs,
-        batch_size=conf_main.batch_size,
-        lr=conf_main.lr,
+        criterion=criterion,
+        metriclog=metriclog,
+        num_epochs=conf_main.train.num_epochs,
+        batch_size=conf_main.train.batch_size,
+        lr=conf_main.train.lr,
         log_exname=conf_main.exp_name,
-        log_alldir=conf_main.log_alldir,
-        log_interv=conf_main.log_interv
+        log_alldir=conf_main.log.log_alldir,
+        log_interv=conf_main.log.log_interv
     )
 
     trainer.run()

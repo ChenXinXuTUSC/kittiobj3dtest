@@ -19,7 +19,8 @@ def get_logger(logger_name: str, to_file: bool=False, log_file: str=""):
 
     # 创建一个格式化器，定义日志的输出格式
     formatter = logging.Formatter(
-        '[%(asctime)s|%(name)s|%(levelname)s] %(message)s',
+        # '[%(asctime)s|%(name)s|%(levelname)s] %(message)s',
+        '[%(asctime)s|%(levelname)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
@@ -49,3 +50,37 @@ def get_logger(logger_name: str, to_file: bool=False, log_file: str=""):
     # 将处理器添加到日志记录器中
 
     return logger
+
+from datetime import datetime
+from torch.utils.tensorboard import SummaryWriter
+class LoggerTXTFX:
+    def __init__(self, root: str, name: str):
+        self.__start_time = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.__root = osp.join(root, name, self.__start_time)
+
+
+        self.__root_tfx = osp.join(self.__root, "tfx")
+        if not osp.exists(self.__root_tfx):
+            os.makedirs(self.__root_tfx, exist_ok=True)
+        self.__tfx_logger = SummaryWriter(self.__root_tfx)
+
+        self.__root_txt = osp.join(self.__root, "txt")
+        if not osp.exists(self.__root_txt):
+            os.makedirs(self.__root_txt, exist_ok=True)
+        self.__txt_logger = get_logger(
+            name, True,
+            osp.join(self.__root_txt, "run.log")
+        )
+
+    @property
+    def txt(self):
+        """返回文本日志记录器"""
+        return self.__txt_logger
+
+    @property
+    def tfx(self):
+        """返回 TensorBoard 日志记录器"""
+        return self.__tfx_logger
+    
+    def get_root(self):
+        return self.__root

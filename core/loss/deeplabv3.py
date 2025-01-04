@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 import easydict
 
@@ -21,8 +20,8 @@ class DeepLabV3Loss(nn.Module):
             ignore_index=self.ignore_index
         )
     
-    def forward(self, preds, target):
-        loss_out = self.loss_fn(preds["out"], target)
-        loss_aux = self.loss_fn(preds["aux"], target)
+    def forward(self, pred, gdth):
+        loss_out = self.loss_fn(pred["out"], gdth)
+        loss_aux = self.loss_fn(pred["aux"], gdth)
         loss = loss_out + 0.5 * loss_aux
         return loss

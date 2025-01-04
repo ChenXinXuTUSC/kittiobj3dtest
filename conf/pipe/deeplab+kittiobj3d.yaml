@@ -16,8 +16,11 @@ metric:
   cls_name: "DeepLabV3Metric"
   conf_yaml: "conf/metric/DeepLabV3Metric.yaml"
 
-lr: 0.001
-batch_size: 4
-num_epochs: 50
-log_interv: 10
-log_alldir: "log"
+log:
+  log_interv: 10
+  log_alldir: "log"
+
+train:
+  lr: 0.001
+  batch_size: 8
+  num_epochs: 50
