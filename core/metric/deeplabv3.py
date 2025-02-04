@@ -3,12 +3,17 @@ import torch
 import easydict
 from collections import defaultdict
 
+from tabulate import tabulate
+
 import utils
+from .base import Metric
 
 from . import METRIC
 @METRIC.register
-class DeepLabV3Metric:
+class DeepLabV3Metric(Metric):
     def __init__(self, *args, **kwds):
+        super().__init__()
+
         kwds = easydict.EasyDict(kwds)
         self.args = kwds
 
@@ -39,23 +44,28 @@ class DeepLabV3Metric:
         for c in rec:
             self.all_rec[c].append(rec[c])
         
-        mean_iou = [sum(self.all_acc[c]) / len(self.all_acc[c]) for c in self.all_acc]
-        mean_iou = sum(mean_iou) / len(mean_iou)
+        mean_iou = sum(iou.values()) / len(iou.keys())
         self.mean_metric = mean_iou
         if mean_iou > self.best_metric:
             self.best_metric = mean_iou
         
-        logger.txt.info(" ".join([
-            str(x) for x in [
-                prefix,
-                "loss", f"{misc_metrics['loss']:.3f}",
-                "miou", f"{mean_iou:.3f}",
-                "iou", iou,
-                "acc", acc,
-                "rec", rec
-            ]
-        ]))
+        # console log
+        logmsg = [prefix]
+        logmsg.append(f"loss {misc_metrics['loss']:.3f}")
+        logmsg.append(f"miou {mean_iou:.3f}")
+        table_headers = sorted(iou.keys())
+        logmsg.append(tabulate(
+            tabular_data=[
+                ["iou"] + [iou[key] for key in table_headers],
+                ["acc"] + [acc[key] for key in table_headers],
+                ["rec"] + [rec[key] for key in table_headers],
+            ],
+            headers=["class"] + table_headers, tablefmt="fancy_grid", floatfmt=".3f")
+        )
+        logmsg = "\n".join(logmsg)
+        logger.txt.info(logmsg)
 
+        # tensorboard visualization
         iou = {f"{k}": v for k, v in iou.items()}
         acc = {f"{k}": v for k, v in acc.items()}
         rec = {f"{k}": v for k, v in rec.items()}
@@ -97,13 +107,11 @@ class DeepLabV3Metric:
             fp = ((pred == c) & (gdth != c)).sum().float().item()
             fn = ((pred != c) & (gdth == c)).sum().float().item()
 
-            # accuracy
-            acc[c] = tp / (tp + fn)
-
-            # recall
-            rec[c] = tp / (tp + fn)
-
             # Intersection over Union
             iou[c] = tp / ((tp + fn) + fp)
+            # accuracy
+            acc[c] = (tp + tn) / (tp + tn + fp + fn)
+            # recall
+            rec[c] = tp / (tp + fn)
 
         return iou, acc, rec

@@ -1,7 +1,6 @@
 import os
 import os.path as osp
 import sys
-
 sys.path.append("..")
 
 import torch
@@ -12,6 +11,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 
 import utils
+import core
 
 class Trainer:
     def __init__(
@@ -24,7 +24,7 @@ class Trainer:
         train_dataset: torch.utils.data.Dataset,
         valid_dataset: torch.utils.data.Dataset,
         criterion: torch.nn.Module,
-        metriclog,
+        metriclog: core.metric.Metric,
         # training args
         num_epochs: int,
         batch_size: int,
@@ -117,7 +117,7 @@ class Trainer:
 
         # =====================================================================
         # ============================ entry point ============================
-        self.train()
+        self.pipe()
         # ============================ entry point ============================
         # =====================================================================
 
@@ -136,46 +136,45 @@ class Trainer:
             join=True
         )
 
+    def pipe(self):
+        self.criterion = self.criterion
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.1)
 
+        self.metriclog.reset()
+        for epoch in range(self.num_epochs):
+            self.train_epoch(epoch)
+            self.valid_epoch(epoch)
+            self.scheduler.step()
 
-    def train(self):
+    def train_epoch(self, epoch: int):
         model = self.model
         model.train()
 
         train_sampler = self.train_sampler
         train_dataloader = self.train_dataloader
-        criterion = self.criterion
-        optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+        train_sampler.set_epoch(epoch)
 
-        self.metriclog.reset()
-        for epoch in range(self.num_epochs):
-            train_sampler.set_epoch(epoch)
-            for iter, (data, gdth) in enumerate(train_dataloader):
-                data = data.to(self.device).float()
-                gdth = gdth.to(self.device).long()
+        for iter, (data, gdth) in enumerate(train_dataloader):
+            data = data.to(self.device).float()
+            gdth = gdth.to(self.device).long()
 
-                pred = model(data)
-                loss = criterion(pred, gdth)
+            pred = model(data)
+            loss = self.criterion(pred, gdth)
 
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            
-                if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-                    self.metriclog(
-                        self.loggertfx, data, pred, gdth,
-                        prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
-                        tag="train", step=epoch * len(self.train_dataloader) + iter,
-                        loss=loss.item()
-                    )
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+        
+            if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
+                self.metriclog(
+                    self.loggertfx, data, pred, gdth,
+                    prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
+                    tag="train", step=epoch * len(self.train_dataloader) + iter,
+                    loss=loss.item()
+                )
 
-            self.valid(epoch)
-
-            scheduler.step()
-
-
-    def valid(self, epoch: int):
+    def valid_epoch(self, epoch: int):
         model = self.model
         model.eval()
 
@@ -193,15 +192,16 @@ class Trainer:
                 loss = self.criterion(pred, gdth)
 
                 if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-                    self.metriclog(
+                    # self.metriclog(
 
-                    )
+                    # )
+                    pass
 
-            if self.world_rank == 0:
-                curr_metric = self.metriclog.mean()
-                if curr_metric > self.metriclog.best():
-                    self.loggertfx.txt.info(f"best model saved with metric: {curr_metric}")
-                    torch.save(self.model.state_dict(), osp.join(self.ckpt_saved, "best.pth"))
+        if self.world_rank == 0:
+            curr_metric = self.metriclog.mean()
+            if curr_metric > self.metriclog.best():
+                self.loggertfx.txt.info(f"best model saved with metric: {curr_metric}")
+                torch.save(self.model.state_dict(), osp.join(self.ckpt_saved, "best.pth"))
 
     # def log_images(
     #         self, data: torch.Tensor, pred: torch.Tensor, gdth: torch.Tensor,

@@ -1,15 +1,14 @@
 import os
-
-import core.metric
-os.environ["TORCH_HOME"] = "."
 import os.path as osp
+os.environ["TORCH_HOME"] = "."
+
 import argparse
+
 
 import torch
 import torch.utils.data
 
 import core
-import utils
 
 parser = argparse.ArgumentParser("train.py")
 parser.add_argument("--conf", type=str, help="main configuration yaml file path")
