@@ -40,19 +40,19 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
         return len(self.files)
     
     def __getitem__(self, index):
-        points = self.__read_kitti_bin(self.files[index][0])
-        labels = self.__read_kitti_label(self.files[index][1])
+        points = self.__read_points(self.files[index][0])
+        labels = self.__read_labels(self.files[index][1])
 
         proj_img_h = self.args.proj_img_h
         proj_img_w = self.args.proj_img_w
 
         return points, labels
     
-    def __read_kitti_bin(self, path):
+    def __read_points(self, path):
         return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
     
 
-    def __read_kitti_label(self, path):
+    def __read_labels(self, path):
         labels = np.fromfile(path, dtype=np.uint32).reshape(-1)
         upper_half = labels >> 16      # get upper half for instances
         lower_half = labels & 0xFFFF   # get lower half for semantics
