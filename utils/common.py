@@ -29,7 +29,16 @@ def save_pcd(points: np.ndarray, colors: np.ndarray=None, ds_size: float=0.05, o
     o3d.io.write_point_cloud(f"{out_name}.ply", pcd_ds)
 
 
-def fill_blank(img: np.ndarray, target_val: float, err: float, num_valid: int):
+def fill_blank(img: np.ndarray, target: float, err: float, num_valid: int):
+    '''
+    Fill the blank pixel with surrounding pixels' value
+
+    Params
+    -
+        - img: np.ndarray, [H, W] shape tensor
+        - target: which target value treated as blank
+        - num_valid: number of not blank surrounding pixels
+    '''
     IMG_H, IMG_W = img.shape
 
     img_filled = np.copy(img)
@@ -54,13 +63,13 @@ def fill_blank(img: np.ndarray, target_val: float, err: float, num_valid: int):
 
     for i in range(IMG_H):
         for j in range(IMG_W):
-            if abs(img[i][j] - target_val) >= err:
+            if abs(img[i][j] - target) >= err:
                 continue
             pix = []
             for d in dirs:
                 u = i + d[0]
                 v = j + d[1]
-                if in_bound(u, v) and img[u][v] > err:
+                if in_bound(u, v) and abs(target - img[u][v]) > err:
                     pix.append(img[u][v])
             if len(pix) >= num_valid:
                 img_filled[i][j] = sum(pix) / len(pix)
