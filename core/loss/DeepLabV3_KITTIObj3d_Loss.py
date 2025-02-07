@@ -6,17 +6,19 @@ import easydict
 from . import LOSS
 
 @LOSS.register
-class DeepLabV3Loss(nn.Module):
+class DeepLabV3_KITTIObj3d_Loss(nn.Module):
     def __init__(self, *args, **kwds):
         super().__init__()
         kwds = easydict.EasyDict(kwds)
         self.args = kwds
 
         self.weight = kwds.get("weight", None)
-        self.ignore_index = kwds.get("ignore_index", 255)
+        self.ignore_index = kwds.get("ignore_index", -100)
+        if self.weight is not None:
+            self.weight = torch.tensor(self.weight)
 
         self.loss_fn = nn.CrossEntropyLoss(
-            weight=torch.tensor(self.weight),
+            weight=self.weight,
             ignore_index=self.ignore_index
         )
     

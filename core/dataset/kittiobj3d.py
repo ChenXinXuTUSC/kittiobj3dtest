@@ -63,7 +63,7 @@ class KITTIObj3d(torch.utils.data.dataset.Dataset):
         gdth = utils.fill_blank(gdth, 0, 1e-4, 4)
         fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
 
-        return fmap, gdth
+        return fmap, gdth.astype(np.int64)
     
     def __read_points(self, index: int):
         index = f"{index:06d}" # pad with 0

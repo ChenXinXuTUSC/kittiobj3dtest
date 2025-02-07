@@ -49,3 +49,29 @@ else:
 ## mp.spawn 不接受双下划线的属性
 
 我就是有很多奇怪的想法突然想尝试，想学别人那些库，把不想给外界访问的方法用双下划线装饰，结果 `mp.spawn` 也不能访问被双下划线修饰的函数……
+
+
+## nn.CrossEntropyLoss 不支持非连续标签
+
+SemanticKITTI 的每个类别的标签值不是连续的，就是说背景类是 0 ，但是后面的类不是依次递增的，所以 40 多个类别但是最大整型标签索引去到了 255 。计算交叉熵损失函数的时候 cuda 库断言报错说输入的类别索引大于了类别数的索引：
+```txt
+/opt/conda/conda-bld/pytorch_1659484809662/work/aten/src/ATen/native/cuda/NLLLoss2d.cu:103: nll_loss2d_forward_kernel: block: [1,0,0], thread: [128,0,0] Assertion `t >= 0 && t < n_classes` failed.
+```
+
+PyTorch 的 CrossEntropyLoss (CLE)  有多种调用方式，取决于你的输入数据的形状和你的需求。  主要区别在于目标标签 (target) 的形状以及是否需要指定权重。
+
+基本用法：
+
+```python
+loss = nn.CrossEntropyLoss()(input, target)
+```
+
+input (Tensor):  模型的输出，形状通常为 (N, C)，其中 N 是批次大小，C 是类别数。  每个元素表示对应样本属于每个类别的概率或logit值(取决于你模型的输出层是否有softmax)。 不包含softmax。
+
+target (Tensor):  目标标签，形状通常为 (N,)，包含每个样本的类别索引（整数），从 0 到 C-1。  必须是长整数类型(torch.long)。
+
+## 损失函数权重和数据集类别不配对
+
+尝试 SemanticKITTI 数据集的时候，发现 KITTIObjec3D 的数据集使用的损失函数不能给 SemanticKITTI 用，因为 KITTI 只有不到十个类别，所以可以手写权重，但是 SemanticKITTI 有 40 多个类别，光是权重数量就不一样，所以不能复用之前的损失函数了……
+
+然后我发现不仅损失函数要改，模型的输出通道也需要对应跟着数据集的类别数修改
