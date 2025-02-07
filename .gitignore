@@ -1,5 +1,6 @@
 data/
 __pycache__/
+build/
 log/
 results/
 notebook/hub/
@@ -7,3 +8,7 @@ hub/
 *.out
 *.err
 *.ipynb
+*.ply
+*.pcd
+*.bin
+*.log

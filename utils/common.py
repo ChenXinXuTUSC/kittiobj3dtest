@@ -28,16 +28,16 @@ def save_pcd(points: np.ndarray, colors: np.ndarray=None, ds_size: float=0.05, o
     pcd_ds = pcd.voxel_down_sample(ds_size)
     o3d.io.write_point_cloud(f"{out_name}.ply", pcd_ds)
 
-
-def fill_blank(img: np.ndarray, target: float, err: float, num_valid: int):
+def fill_blank(img: np.ndarray, target: float, err: float, num_valid: int, mode: str="avg"):
     '''
     Fill the blank pixel with surrounding pixels' value
 
     Params
     -
-        - img: np.ndarray, [H, W] shape tensor
-        - target: which target value treated as blank
-        - num_valid: number of not blank surrounding pixels
+    - img: np.ndarray, [H, W] shape tensor
+    - target: which target value treated as blank
+    - num_valid: number of not blank surrounding pixels
+    - mode: str, [avg|cnt] average values or pick the value with max exist counts
     '''
     IMG_H, IMG_W = img.shape
 
@@ -72,7 +72,11 @@ def fill_blank(img: np.ndarray, target: float, err: float, num_valid: int):
                 if in_bound(u, v) and abs(target - img[u][v]) > err:
                     pix.append(img[u][v])
             if len(pix) >= num_valid:
-                img_filled[i][j] = sum(pix) / len(pix)
+                if mode == "avg":
+                    img_filled[i][j] = sum(pix) / len(pix)
+                if mode == "cnt":
+                    unique, count = np.unique(np.array(pix), return_counts=True)
+                    img_filled[i][j] = unique[np.argmax(count)]
     
     return img_filled
 

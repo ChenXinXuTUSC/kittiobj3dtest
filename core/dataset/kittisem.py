@@ -7,6 +7,9 @@ import torch.utils.data.dataset
 
 import numpy as np
 
+import utils
+
+from .projproc import snapshot_spherical
 
 from . import DATASET
 
@@ -17,8 +20,14 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
         kwds = easydict.EasyDict(kwds)
         self.args = kwds
 
-        self.root = osp.join(self.args.root, 'sequences') 
-        seq_list = self.args.seq_list
+        self.split = self.args.split
+        assert self.split == "train" or self.split == "valid", f"invalid split {self.split}"
+
+        self.root = osp.join(self.args.root, 'sequences')
+        if self.split == "train":
+            seq_list = self.args.train_seq_list
+        if self.split == "valid":
+            seq_list = self.args.valid_seq_list
 
         self.files = []
 
@@ -35,6 +44,9 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
                         osp.join(gdth_dir, fname + ".label")
                     ))
         
+        self.cls2ldx = {cls: idx for (cls, idx) in self.args.cls_idx.items()}
+        self.ldx2cls = {idx: cls for (cls, idx) in self.args.cls_idx.items()}
+        self.pallete = {self.cls2ldx[cls]: clr for (cls, clr) in self.args.pallete.items()}
 
     def __len__(self):
         return len(self.files)
@@ -46,7 +58,21 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
         proj_img_h = self.args.proj_img_h
         proj_img_w = self.args.proj_img_w
 
-        return points, labels
+        fmap, gdth, rmap = snapshot_spherical(
+            points, labels,
+            img_h=proj_img_h,
+            img_w=proj_img_w
+        )
+        # do smooth on range and intensity channel
+        fmap[0] = utils.fill_blank(fmap[0], 0, 1e-4, 4)
+        fmap[1] = utils.fill_blank(fmap[1], 0, 1e-4, 4)
+        fmap[2] = utils.fill_blank(fmap[2], 0, 1e-4, 4)
+        fmap[3] = utils.fill_blank(fmap[3], 0, 1e-4, 4)
+        fmap[4] = utils.fill_blank(fmap[4], 0, 1e-4, 4)
+        gdth = utils.fill_blank(gdth, 0, 1e-4, 4, mode="cnt")
+        fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
+
+        return fmap, gdth
     
     def __read_points(self, path):
         return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
@@ -56,5 +82,5 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
         labels = np.fromfile(path, dtype=np.uint32).reshape(-1)
         upper_half = labels >> 16      # get upper half for instances
         lower_half = labels & 0xFFFF   # get lower half for semantics
-        return lower_half
+        return lower_half.astype(np.int32)
 
