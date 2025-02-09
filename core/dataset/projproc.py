@@ -114,3 +114,80 @@ def snapshot_spherical(
             gdth[img_coord_h[i], img_coord_w[i]] = labels[i]
     
     return fmap, gdth, rmap
+
+def snapshot_orthognal(
+        points: np.ndarray, labels: np.ndarray,
+        img_h=64, img_w=64,
+        proj_axis=np.array([0, 0, 1]), # 投影方向轴
+        proj_center=np.array([0, 0, 0]), # 投影中心点
+        x_range=None, y_range=None
+    ):
+    """正交投影点云到像素图像
+    
+    Args:
+        points: 点云坐标, shape [N, 3]
+        labels: 点云类别标签, shape [N]
+        img_h: 投影图像高度
+        img_w: 投影图像宽度
+        proj_axis: 投影方向轴向量, 会被归一化
+        proj_center: 投影中心点坐标
+        x_range: 投影平面x轴投影范围, (min_x, max_x)
+        y_range: 投影平面y轴投影范围, (min_y, max_y)
+    
+    Returns:
+        gdth: 投影图像标签, shape [H, W]
+        rmap: 每个像素对应的原始点云索引列表
+    """
+    coords = points.copy()
+    
+    # 将点云平移到投影中心
+    coords = coords - proj_center
+    
+    # 归一化投影轴方向
+    proj_axis = proj_axis / np.linalg.norm(proj_axis)
+    
+    # 计算投影平面的基向量
+    # 选择任意与投影轴不平行的向量作为辅助向量
+    aux_vec = np.array([1, 0, 0]) if not np.allclose(proj_axis, [1, 0, 0]) else np.array([0, 1, 0])
+    # 计算投影平面的x轴方向(右方向)
+    basis_x = np.cross(proj_axis, aux_vec)
+    basis_x = basis_x / np.linalg.norm(basis_x)
+    # 计算投影平面的y轴方向(上方向)
+    basis_y = np.cross(proj_axis, basis_x)
+    basis_y = basis_y / np.linalg.norm(basis_y)
+    
+    # 将点云投影到新的坐标系
+    proj_x = np.dot(coords, basis_x)
+    proj_y = np.dot(coords, basis_y)
+    proj_z = np.dot(coords, proj_axis)
+    
+    if x_range is None:
+        x_range = (proj_x.min(), proj_x.max())
+    if y_range is None:
+        y_range = (proj_y.min(), proj_y.max())
+        
+    delta_x = (x_range[1] - x_range[0]) / img_w
+    delta_y = (y_range[1] - y_range[0]) / img_h
+    
+    img_coord_h = ((proj_y - y_range[0]) / delta_y).astype(np.int32)
+    img_coord_w = ((proj_x - x_range[0]) / delta_x).astype(np.int32)
+    
+    mask = np.full((len(coords),), True, dtype=bool)
+    mask = mask & (img_coord_h >= 0) & (img_coord_h < img_h)
+    mask = mask & (img_coord_w >= 0) & (img_coord_w < img_w)
+    
+    used = np.array(list(range(len(coords))))[mask]
+    
+    gdth = np.zeros((img_h, img_w), dtype=np.int32)
+    rmap = [[[] for _ in range(img_w)] for _ in range(img_h)]
+    
+    for i in used:
+        rmap[img_coord_h[i]][img_coord_w[i]].append(i)
+        
+        # 选择投影轴方向上距离最近的点作为该像素的标签
+        z_val = proj_z[i]
+        curr_z = gdth[img_coord_h[i], img_coord_w[i]]
+        if curr_z == 0 or z_val < curr_z:
+            gdth[img_coord_h[i], img_coord_w[i]] = labels[i]
+            
+    return gdth, rmap

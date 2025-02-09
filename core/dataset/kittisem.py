@@ -68,12 +68,12 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
             img_w=proj_img_w
         )
         # do smooth on range and intensity channel
-        fmap[0] = utils.fill_blank(fmap[0], 0, 1e-4, 4)
-        fmap[1] = utils.fill_blank(fmap[1], 0, 1e-4, 4)
-        fmap[2] = utils.fill_blank(fmap[2], 0, 1e-4, 4)
-        fmap[3] = utils.fill_blank(fmap[3], 0, 1e-4, 4)
-        fmap[4] = utils.fill_blank(fmap[4], 0, 1e-4, 4)
-        gdth = utils.fill_blank(gdth, 0, 1e-4, 4, mode="cnt")
+        fmap[0] = utils.image_fill2(fmap[0], 0, 1e-4, 4)
+        fmap[1] = utils.image_fill2(fmap[1], 0, 1e-4, 4)
+        fmap[2] = utils.image_fill2(fmap[2], 0, 1e-4, 4)
+        fmap[3] = utils.image_fill2(fmap[3], 0, 1e-4, 4)
+        fmap[4] = utils.image_fill2(fmap[4], 0, 1e-4, 4)
+        gdth = utils.image_fill2(gdth, 0, 1e-4, 4, mode="cnt")
         fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
 
         return fmap, gdth.astype(np.int64)
