@@ -1,6 +1,9 @@
 import os
 import os.path as osp
 
+import time
+import functools
+
 import struct
 import numpy as np
 import open3d as o3d
@@ -28,7 +31,7 @@ def save_pcd(points: np.ndarray, colors: np.ndarray=None, ds_size: float=0.05, o
     pcd_ds = pcd.voxel_down_sample(ds_size)
     o3d.io.write_point_cloud(f"{out_name}.ply", pcd_ds)
 
-def fill_blank(img: np.ndarray, target: float, err: float, num_valid: int, mode: str="avg"):
+def image_fill(img: np.ndarray, target: float, err: float, num_valid: int, mode: str="avg"):
     '''
     Fill the blank pixel with surrounding pixels' value
 
@@ -80,6 +83,44 @@ def fill_blank(img: np.ndarray, target: float, err: float, num_valid: int, mode:
     
     return img_filled
 
+def image_fill2(
+    image: np.ndarray,
+    empty: float,
+    offst: float,
+    num_valid: int,
+):
+    empty_coords = np.stack(np.where((image >= empty - offst) & (image <= empty + offst)), axis=-1)
+    valid_coords = np.stack(np.where((image <  empty - offst) | (image >  empty + offst)), axis=-1)
+    valid_coords_view = valid_coords.view([('', valid_coords.dtype)] * valid_coords.shape[1])
+
+    offset_list = [
+        [ 0, -1],
+        [-1, -1],
+        [-1,  0],
+        [-1,  1],
+        [ 0,  1],
+        [ 1,  1],
+        [ 1,  0],
+        [ 1, -1],
+    ]
+    
+    adj_sum = np.zeros((len(empty_coords, )))
+    adj_cnt = np.zeros((len(empty_coords, )))
+
+    for offset in offset_list:
+        coords = empty_coords + offset
+        coords_view = coords.view([('', coords.dtype)] * coords.shape[1])
+        mask = np.in1d(coords_view, valid_coords_view)
+        
+        adj_sum[mask] += image[coords[mask][:, 0], coords[mask][:, 1]]
+        adj_cnt += mask.astype(np.int32)
+    
+    mask = adj_cnt >= num_valid
+    image[empty_coords[mask][:, 0], empty_coords[mask][:, 1]] = adj_sum[mask] / adj_cnt[mask]
+
+    return image
+
+
 def normalized_fmap(fmap: np.ndarray, cidx: list):
     """
     对 [C, H, W] 的特征图的指定通道进行归一化。
@@ -128,3 +169,15 @@ def visualize_fmap(fmap: np.ndarray):
     for idx, (cls_name, color) in enumerate(pallete.items()):
         img[fmap == idx] = np.array(color)
     return img
+
+# deepseek
+def timing_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()  # 记录开始时间
+        result = func(*args, **kwargs)  # 执行目标函数
+        end_time = time.time()  # 记录结束时间
+        run_time = end_time - start_time  # 计算运行时间
+        print(f"Function '{func.__name__}' executed in {run_time:.4f} seconds.")
+        return result  # 返回目标函数的返回值
+    return wrapper
