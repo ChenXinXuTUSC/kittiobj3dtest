@@ -1,44 +1,5 @@
 import numpy as np
 
-# def R_mat_old(axis: np.ndarray, angle: float, radian: bool=True):
-#     """
-#     generate the 3x3 rotation matrix with the specified axis and angle
-
-#     Params
-#     -
-#         - axis: np.ndarray, [1, 3] or [3]
-#         - angle: float, rotation angle, in radian
-#         - radian: bool, angle in radian or degree
-    
-#     Return
-#     -
-#         - R: np.ndarray, [3, 3] rotation matrix
-#     """
-#     # angle to radian
-#     angle_rad = angle
-#     if not radian:
-#         angle_rad = np.radians(angle)
-
-#     # normalize rotation axis
-#     if not isinstance(axis, np.ndarray):
-#         axis = np.array(axis)
-#     axis = axis / np.linalg.norm(axis)
-
-#     # compute each component
-#     x, y, z = axis
-#     c = np.cos(angle_rad)
-#     s = np.sin(angle_rad)
-#     C = 1 - c
-
-#     # build the rotation matrix
-#     rotation_matrix = np.array([
-#         [x*x*C + c,   x*y*C - z*s, x*z*C + y*s],
-#         [y*x*C + z*s, y*y*C + c,   y*z*C - x*s],
-#         [z*x*C - y*s, z*y*C + x*s, z*z*C + c  ]
-#     ])
-
-#     return rotation_matrix
-
 def R_mat(axis: np.ndarray, angle: float, radian: bool=True):
     """
     generate the 3x3 rotation matrix with the specified axis and angle
