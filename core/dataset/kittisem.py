@@ -73,7 +73,7 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
         fmap[2] = utils.image_fill2(fmap[2], 0, 1e-4, 4)
         fmap[3] = utils.image_fill2(fmap[3], 0, 1e-4, 4)
         fmap[4] = utils.image_fill2(fmap[4], 0, 1e-4, 4)
-        gdth = utils.image_fill2(gdth, 0, 1e-4, 4, mode="cnt")
+        gdth = utils.image_fill2(gdth, 0, 1e-4, 4)
         fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
 
         return fmap, gdth.astype(np.int64)
