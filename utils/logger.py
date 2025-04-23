@@ -58,12 +58,11 @@ class LoggerTXTFX:
         self.__start_time = datetime.now().strftime("%Y%m%d%H%M%S")
         self.__root = osp.join(root, name, self.__start_time)
 
-
         self.__root_tfx = osp.join(self.__root, "tfx")
         if not osp.exists(self.__root_tfx):
             os.makedirs(self.__root_tfx, exist_ok=True)
         self.__tfx_logger = SummaryWriter(self.__root_tfx)
-
+        
         self.__root_txt = osp.join(self.__root, "txt")
         if not osp.exists(self.__root_txt):
             os.makedirs(self.__root_txt, exist_ok=True)
