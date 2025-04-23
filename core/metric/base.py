@@ -10,3 +10,15 @@ class Metric:
 
     def reset(self):
         pass
+    
+    def mct(self,
+        data, pred, gdth
+    ):
+        raise NotImplementedError("derived mct not defined")
+
+    # console and tensorboard log
+    # print the last computed metric
+    def log(self,
+        
+    ):
+        raise NotImplementedError("derived log not defined")

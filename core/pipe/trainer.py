@@ -165,14 +165,22 @@ class Trainer:
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-        
+
+            self.metriclog.mct(data, pred, gdth)
             if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-                self.metriclog(
-                    self.loggertfx, data, pred, gdth,
+                self.metriclog.log(
+                    self.loggertfx,
                     prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
-                    tag="train", step=epoch * len(self.train_dataloader) + iter,
+                    tfbtag="train",
+                    step=epoch * len(self.train_dataloader) + iter,
                     loss=loss.item()
                 )
+                # self.metriclog(
+                #     self.loggertfx, data, pred, gdth,
+                #     prefix=,
+                #     tag="train", step=,
+                #     loss=loss.item()
+                # )
 
     def valid_epoch(self, epoch: int):
         model = self.model
@@ -181,7 +189,6 @@ class Trainer:
         valid_sampler = self.valid_sampler
         valid_dataloader = self.valid_dataloader
 
-        self.metriclog.reset()
         with torch.no_grad():
             valid_sampler.set_epoch(epoch)
             for iter, (data, gdth) in enumerate(valid_dataloader):
@@ -191,17 +198,25 @@ class Trainer:
                 pred = model(data)
                 loss = self.criterion(pred, gdth)
 
-                if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-                    # self.metriclog(
+                # record current iter's metric info
+                self.metriclog.mct(data, pred, gdth)
 
-                    # )
-                    pass
+                if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
+                    self.metriclog.log(
+                    self.loggertfx,
+                    prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader):.2f}%]",
+                    tfbtag="valid",
+                    step=epoch * len(self.valid_dataloader) + iter,
+                    loss=loss.item()
+                )
 
         if self.world_rank == 0:
-            curr_metric = self.metriclog.mean()
+            curr_metric = self.metriclog.best()
             if curr_metric > self.metriclog.best():
                 self.loggertfx.txt.info(f"best model saved with metric: {curr_metric}")
-                torch.save(self.model.state_dict(), osp.join(self.ckpt_saved, "best.pth"))
+                torch.save(self.model.state_dict(), osp.join(self.loggertfx.get_root(), "pth", "best.pth"))
+
+        self.metriclog.reset()
 
     # def log_images(
     #         self, data: torch.Tensor, pred: torch.Tensor, gdth: torch.Tensor,
