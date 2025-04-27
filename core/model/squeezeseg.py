@@ -95,7 +95,7 @@ class SqueezeSeg(nn.Module):
         self.conv14_prob = nn.Conv2d(64, out_channels, kernel_size=3, stride=1, padding=1)
         # where is CRF refine RNN layer ?
 
-    def forward(self, data: torch.Tensor):                           # [N,   5, 64, 512]
+    def forward(self, data: torch.Tensor):   # [N,   5, 64, 512]
         # U-Net(FCN)
         conv1_out   = self.conv1(data)              # [N,  64, 32, 256]
         skip1_out   = self.conv1_skip(data)         # [N,  64, 64, 512]
