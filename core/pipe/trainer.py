@@ -81,6 +81,7 @@ class Trainer:
             sampler=self.train_sampler,
             num_workers=4,
             pin_memory=True,
+            drop_last=True # 防止批次归一化 BN 的时候，最后一个批次只有一个样本导致抛出异常
         )
 
         self.valid_sampler = DistributedSampler(
@@ -92,14 +93,18 @@ class Trainer:
             sampler=self.valid_sampler,
             num_workers=4,
             pin_memory=True,
+            drop_last=True
         )
 
         if self.world_rank == 0:
             self.loggertfx = utils.logger.LoggerTXTFX(
                 self.log_alldir, name=self.log_exname
             )
+            self.ckpt_save_path = osp.join(self.loggertfx.get_root(), "pth")
+            os.makedirs(self.ckpt_save_path, exist_ok=True)
         else:
             self.loggertfx = None
+            self.ckpt_save_path = None
 
     def ddp_cleanup(self):
         dist.destroy_process_group()
@@ -175,12 +180,13 @@ class Trainer:
                     step=epoch * len(self.train_dataloader) + iter,
                     loss=loss.item()
                 )
-                # self.metriclog(
-                #     self.loggertfx, data, pred, gdth,
-                #     prefix=,
-                #     tag="train", step=,
-                #     loss=loss.item()
-                # )
+        
+        if self.world_rank == 0:
+            # only main process have file access
+            torch.save(
+                self.model.state_dict(),
+                osp.join(self.ckpt_save_path, "last_train.pth")
+            )
 
     def valid_epoch(self, epoch: int):
         model = self.model
@@ -189,6 +195,7 @@ class Trainer:
         valid_sampler = self.valid_sampler
         valid_dataloader = self.valid_dataloader
 
+        self.metriclog.reset() # 重置指标，去除训练阶段累积
         with torch.no_grad():
             valid_sampler.set_epoch(epoch)
             for iter, (data, gdth) in enumerate(valid_dataloader):
@@ -203,42 +210,18 @@ class Trainer:
 
                 if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
                     self.metriclog.log(
-                    self.loggertfx,
-                    prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader):.2f}%]",
-                    tfbtag="valid",
-                    step=epoch * len(self.valid_dataloader) + iter,
-                    loss=loss.item()
-                )
+                        self.loggertfx,
+                        prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader):.2f}%]",
+                        tfbtag="valid",
+                        step=epoch * len(self.valid_dataloader) + iter,
+                        loss=loss.item()
+                    )
 
         if self.world_rank == 0:
-            curr_metric = self.metriclog.best()
-            if curr_metric > self.metriclog.best():
-                self.loggertfx.txt.info(f"best model saved with metric: {curr_metric}")
-                torch.save(self.model.state_dict(), osp.join(self.loggertfx.get_root(), "pth", "best.pth"))
-
+            if self.metriclog.best():
+                self.loggertfx.txt.info(
+                    f"save a new best metric ckp: {self.metriclog.mean()}"
+                )
+                torch.save(self.model.state_dict(), osp.join(self.ckpt_save_path, "best_valid.pth"))
+        # 每个 epoch 重制一次指标累积
         self.metriclog.reset()
-
-    # def log_images(
-    #         self, data: torch.Tensor, pred: torch.Tensor, gdth: torch.Tensor,
-    #         epoch: int, iter: int, tfx_tag: str
-    #     ):
-    #     # visualize pred and gdth mask image
-    #     fmap_img = data[0][3].cpu().numpy()
-    #     pred_img = torch.argmax(pred[0], dim=0).cpu().numpy()
-    #     gdth_img = gdth[0].cpu().numpy()
-
-    #     # add color
-    #     pred_img = utils.visualize_fmap(pred_img)
-    #     gdth_img = utils.visualize_fmap(gdth_img)
-    #     self.tfx_logger.add_image(
-    #         tag=f"{tfx_tag}/fmap_img", img_tensor=fmap_img, dataformats="HW",
-    #         global_step=epoch * len(self.train_dataloader) + iter
-    #     )
-    #     self.tfx_logger.add_image(
-    #         tag=f"{tfx_tag}/train/pred_img", img_tensor=pred_img, dataformats="HWC",
-    #         global_step=epoch * len(self.train_dataloader) + iter
-    #     )
-    #     self.tfx_logger.add_image(
-    #         tag=f"{tfx_tag}/train/gdth_img", img_tensor=gdth_img, dataformats="HWC",
-    #         global_step=epoch * len(self.train_dataloader) + iter
-    #     )
