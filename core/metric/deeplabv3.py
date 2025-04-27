@@ -85,7 +85,7 @@ class DeepLabV3Metric(Metric):
         if len(self.mean_metric["iou"]) == 0:
             return 0
         # 返回到目前位置积累的所有样本批次的所有类别的平均交并比的均值
-        ret = sum(self.mean_metric["iou"].values()) / len(self.mean_metric["iou"])
+        ret = sum(self.mean_metric["iou"]) / (len(self.mean_metric["iou"]))
         return ret
 
     # should return a scalar
