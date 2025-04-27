@@ -18,9 +18,9 @@ metric:
 
 log:
   log_interv: 10
-  log_alldir: "log"
+  log_alldir: "log/test"
 
 train:
   lr: 0.001
   batch_size: 4
-  num_epochs: 50
+  num_epochs: 10
