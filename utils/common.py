@@ -149,27 +149,6 @@ def normalized_fmap(fmap: np.ndarray, cidx: list):
     
     return fmap
 
-
-pallete = {
-    "DontCare": [0, 0, 0],
-    "Car": [255, 0, 0],
-    "Cyclist": [0, 255, 0],
-    "Pedestrian": [0, 0, 255],
-    "Misc": [255, 255, 0],
-    "Person_sitting": [255, 0, 255],
-    "Tram": [0, 255, 255],
-    "Truck": [255, 128, 0],
-    "Van": [0, 128, 255]
-}
-def visualize_fmap(fmap: np.ndarray):
-    '''
-    - fmap: [H, W] shape
-    '''
-    img = np.zeros((*fmap.shape[:2], 3), dtype=np.uint8)
-    for idx, (cls_name, color) in enumerate(pallete.items()):
-        img[fmap == idx] = np.array(color)
-    return img
-
 # deepseek
 def timing_decorator(func):
     @functools.wraps(func)
