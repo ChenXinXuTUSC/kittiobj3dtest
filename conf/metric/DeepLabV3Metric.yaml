@@ -1,3 +1,114 @@
 bkgcls_idx: 0
 bg_clsname: "DontCare"
 ignore_cls: -1
+
+
+cls_names: [
+  "unlabeled",
+  "outlier",
+  "car",
+  "bicycle",
+  "bus",
+  "motorcycle",
+  "on-rails",
+  "truck",
+  "other-vehicle",
+  "person",
+  "bicyclist",
+  "motorcyclist",
+  "road",
+  "parking",
+  "sidewalk",
+  "other-ground",
+  "building",
+  "fence",
+  "other-structure",
+  "lane-marking",
+  "vegetation",
+  "trunk",
+  "terrain",
+  "pole",
+  "traffic-sign",
+  "other-object",
+  "moving-car",
+  "moving-bicyclist",
+  "moving-person",
+  "moving-motorcyclist",
+  "moving-on-rails",
+  "moving-bus",
+  "moving-truck",
+  "moving-other-vehicle"
+]
+
+cls_idx:
+  unlabeled: 0 
+  outlier: 1 
+  car: 10
+  bicycle: 11
+  bus: 13
+  motorcycle: 15
+  on-rails: 16
+  truck: 18
+  other-vehicle: 20
+  person: 30
+  bicyclist: 31
+  motorcyclist: 32
+  road: 40
+  parking: 44
+  sidewalk: 48
+  other-ground: 49
+  building: 50
+  fence: 51
+  other-structure: 52
+  lane-marking: 60
+  vegetation: 70
+  trunk: 71
+  terrain: 72
+  pole: 80
+  traffic-sign: 81
+  other-object: 99
+  moving-car: 252
+  moving-bicyclist: 253
+  moving-person: 254
+  moving-motorcyclist: 255
+  moving-on-rails: 256
+  moving-bus: 257
+  moving-truck: 258
+  moving-other-vehicle: 259
+
+pallete: [
+  [0, 0, 0],
+  [0, 0, 255],
+  [245, 150, 100],
+  [245, 230, 100],
+  [250, 80, 100],
+  [150, 60, 30],
+  [255, 0, 0],
+  [180, 30, 80],
+  [255, 0, 0],
+  [30, 30, 255],
+  [200, 40, 255],
+  [90, 30, 150],
+  [255, 0, 255],
+  [255, 150, 255],
+  [75, 0, 75],
+  [75, 0, 175],
+  [0, 200, 255],
+  [50, 120, 255],
+  [0, 150, 255],
+  [170, 255, 150],
+  [0, 175, 0],
+  [0, 60, 135],
+  [80, 240, 150],
+  [150, 240, 255],
+  [0, 0, 255],
+  [255, 255, 50],
+  [245, 150, 100],
+  [255, 0, 0],
+  [200, 40, 255],
+  [30, 30, 255],
+  [90, 30, 150],
+  [250, 80, 100],
+  [180, 30, 80],
+  [255, 0, 0],
+]

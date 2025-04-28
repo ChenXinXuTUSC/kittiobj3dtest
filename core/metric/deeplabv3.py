@@ -11,48 +11,13 @@ from .base import Metric
 from . import METRIC
 @METRIC.register
 class DeepLabV3Metric(Metric):
-    pallete = {
-        "unlabeled": [0, 0, 0],
-        "outlier": [0, 0, 255],
-        "car": [245, 150, 100],
-        "bicycle": [245, 230, 100],
-        "bus": [250, 80, 100],
-        "motorcycle": [150, 60, 30],
-        "on-rails": [255, 0, 0],
-        "truck": [180, 30, 80],
-        "other-vehicle": [255, 0, 0],
-        "person": [30, 30, 255],
-        "bicyclist": [200, 40, 255],
-        "motorcyclist": [90, 30, 150],
-        "road": [255, 0, 255],
-        "parking": [255, 150, 255],
-        "sidewalk": [75, 0, 75],
-        "other-ground": [75, 0, 175],
-        "building": [0, 200, 255],
-        "fence": [50, 120, 255],
-        "other-structure": [0, 150, 255],
-        "lane-marking": [170, 255, 150],
-        "vegetation": [0, 175, 0],
-        "trunk": [0, 60, 135],
-        "terrain": [80, 240, 150],
-        "pole": [150, 240, 255],
-        "traffic-sign": [0, 0, 255],
-        "other-object": [255, 255, 50],
-        "moving-car": [245, 150, 100],
-        "moving-bicyclist": [255, 0, 0],
-        "moving-person": [200, 40, 255],
-        "moving-motorcyclist": [30, 30, 255],
-        "moving-on-rails":[90, 30, 150],
-        "moving-bus": [250, 80, 100],
-        "moving-truck": [180, 30, 80],
-        "moving-other-vehicle": [255, 0, 0],
-    }
-
     def __init__(self, *args, **kwds):
         super().__init__()
 
         kwds = easydict.EasyDict(kwds)
         self.args = kwds
+
+        self.pallete = self.args.pallete
 
         self.all_iou = defaultdict(list)
         self.all_acc = defaultdict(list)
@@ -228,6 +193,6 @@ class DeepLabV3Metric(Metric):
         - fmap: [H, W] shape
         '''
         img = np.zeros((*fmap.shape[:2], 3), dtype=np.uint8)
-        for idx, (cls_name, color) in enumerate(DeepLabV3Metric.pallete.items()):
+        for idx, (cls_name, color) in enumerate(self.pallete.items()):
             img[fmap == idx] = np.array(color)
         return img
