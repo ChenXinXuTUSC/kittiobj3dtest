@@ -43,10 +43,12 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
                         osp.join(data_dir, fname + ".bin"),
                         osp.join(gdth_dir, fname + ".label")
                     ))
-        
+        # cls 原始类名 class
+        # idx 连续索引 index
+        # lbl 离散索引 label
         self.cls2idx = {cls: idx for (idx, cls) in enumerate(self.args.cls_names)}
         self.idx2cls = {idx: cls for (idx, cls) in enumerate(self.args.cls_names)}
-        self.ldx2idx = {ldx: self.cls2idx[cls] for (cls, ldx) in self.args.cls_idx.items()}
+        self.ldx2idx = {ldx: self.cls2idx[cls] for (cls, ldx) in self.args.cls_lbl.items()}
         self.pallete = {idx: clr for (idx, clr) in enumerate(self.args.pallete)}
 
     def __len__(self):
@@ -55,7 +57,8 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
     def __getitem__(self, index):
         points = self.__read_points(self.files[index][0])
         labels = self.__read_labels(self.files[index][1])
-        # transform into contiguous index from 0 to n-1
+        # transform original discrete label
+        # into contiguous index (from 0 to n-1)
         for k, v in self.ldx2idx.items():
             labels[labels == k] = v
 
