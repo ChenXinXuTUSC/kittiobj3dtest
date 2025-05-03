@@ -21,13 +21,10 @@ class KITTISemantic(torch.utils.data.dataset.Dataset):
         self.args = kwds
 
         self.split = self.args.split
-        assert self.split == "train" or self.split == "valid", f"invalid split {self.split}"
+        assert self.split in self.args.seqs_split, f"{self.split} not in dataset conf"
 
         self.root = osp.join(self.args.root, 'sequences')
-        if self.split == "train":
-            seq_list = self.args.train_seq_list
-        if self.split == "valid":
-            seq_list = self.args.valid_seq_list
+        seq_list = self.args.seqs_split[self.split]
 
         self.files = []
 
