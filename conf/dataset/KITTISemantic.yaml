@@ -3,9 +3,10 @@ root: "data/kittisem"
 train_set_ratio: 0.7
 valid_set_ratio: 0.3
 
-train_seq_list: ["00", "01", "02"]
-valid_seq_list: ["03"]
-testt_seq_list: ["04"]
+seqs_split:
+  train: ["00", "01", "02"]
+  valid: ["03"]
+  testt: ["04"]
 
 proj_img_h: 128
 proj_img_w: 1024
