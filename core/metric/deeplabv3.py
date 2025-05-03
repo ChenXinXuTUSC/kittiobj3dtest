@@ -193,6 +193,6 @@ class DeepLabV3Metric(Metric):
         - fmap: [H, W] shape
         '''
         img = np.zeros((*fmap.shape[:2], 3), dtype=np.uint8)
-        for idx, (cls_name, color) in enumerate(self.pallete.items()):
-            img[fmap == idx] = np.array(color)
+        for idx, clr in enumerate(self.pallete.values()):
+            img[fmap == idx] = np.array(clr)
         return img
