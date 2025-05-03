@@ -97,18 +97,14 @@ def snapshot_spherical(
 
     gdth = np.zeros((img_h, img_w), dtype=np.int32)
     fmap = np.zeros((5, img_h, img_w))
-    # rmap is for back projection usage
-    rmap = [[[] for _ in range(img_w)] for _ in range(img_h)]
-
+    rmap = np.stack([img_coord_h, img_coord_w], axis=0)
     # feature vector [x, y, z, i, r], shape [C, H, W]
     for i in used:
-        # `i` is already the original index of points
-        rmap[img_coord_h[i]][img_coord_w[i]].append(i)
-
         # select the point with nearest range as the feature pixel
         dist = np.linalg.norm(coords[i])
         feat = np.array([*points[i], dist])
-        # empty pixel or a nearer pixel lead to an update
+        # empty pixel or a samller depth value
+        # lead to an update pixel feature
         if fmap[4, img_coord_h[i], img_coord_w[i]] == 0 or dist < fmap[4, img_coord_h[i], img_coord_w[i]]:
             fmap[:, img_coord_h[i], img_coord_w[i]] = feat
             gdth[img_coord_h[i], img_coord_w[i]] = labels[i]
