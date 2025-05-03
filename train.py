@@ -24,8 +24,8 @@ def main():
     args_metric  = core.readconfyaml.read(conf_main.metric.conf_yaml)
 
     # dataset is more important than model
-    train_dataset=core.dataset.DATASET[conf_main.dataset.cls_name](**args_dataset, split="train")
-    valid_dataset=core.dataset.DATASET[conf_main.dataset.cls_name](**args_dataset, split="valid")
+    train_dataset = core.dataset.DATASET[conf_main.dataset.cls_name](**args_dataset, split="train")
+    valid_dataset = core.dataset.DATASET[conf_main.dataset.cls_name](**args_dataset, split="valid")
 
     # create corresponding model
     model = core.model.MODEL[conf_main.model.cls_name](**args_model)
