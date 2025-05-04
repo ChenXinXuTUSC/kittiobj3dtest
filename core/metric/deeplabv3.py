@@ -7,10 +7,10 @@ from tabulate import tabulate
 
 import utils
 
-from .base import Metric
+from .base import BaseMetricLog
 from . import METRIC
 @METRIC.register
-class DeepLabV3Metric(Metric):
+class DeepLabV3Metric(BaseMetricLog):
     def __init__(self, *args, **kwds):
         super().__init__()
 

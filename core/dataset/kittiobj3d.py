@@ -1,23 +1,20 @@
 import os
 import os.path as osp
 
-import torch
-import torch.utils.data.dataset
 import numpy as np
-import open3d as o3d
 
-import struct
 import easydict
 
 import utils
 
 from . import DATASET
+from .base import BaseDataset
 
 from .projproc import snapshot_spherical
 
 
 @DATASET.register
-class KITTIObj3d(torch.utils.data.dataset.Dataset):
+class KITTIObj3d(BaseDataset):
     def __init__(self, *args, **kwds):
         super().__init__()
         kwds = easydict.EasyDict(kwds)
@@ -49,7 +46,7 @@ class KITTIObj3d(torch.utils.data.dataset.Dataset):
     def __len__(self) -> int:
         return len(self.frame_index)
 
-    @utils.timing_decorator
+    # @utils.timing_decorator
     def __getitem__(self, index):
         points, labels = self.__make_labels(index)
 
@@ -160,4 +157,3 @@ class KITTIObj3d(torch.utils.data.dataset.Dataset):
             labels[mask] = self.cls2ldx[label.object_type]
         
         return points, labels
-

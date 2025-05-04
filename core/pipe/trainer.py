@@ -21,10 +21,10 @@ class Trainer:
         world_size: int,
         # model and data args
         model: torch.nn.Module,
-        train_dataset: torch.utils.data.Dataset,
-        valid_dataset: torch.utils.data.Dataset,
+        train_dataset: core.dataset.BaseDataset,
+        valid_dataset: core.dataset.BaseDataset,
         criterion: torch.nn.Module,
-        metriclog: core.metric.Metric,
+        metriclog: core.metric.BaseMetricLog,
         # training args
         num_epochs: int,
         batch_size: int,
@@ -77,6 +77,7 @@ class Trainer:
         )
         self.train_dataloader = DataLoader(
             dataset=self.train_dataset,
+            collate_fn=self.train_dataset.collate_fn("train"),
             batch_size=self.batch_size,
             sampler=self.train_sampler,
             num_workers=4,
@@ -89,6 +90,7 @@ class Trainer:
         )
         self.valid_dataloader = DataLoader(
             dataset=self.valid_dataset,
+            collate_fn=self.valid_dataset.collate_fn("valid"),
             batch_size=self.batch_size,
             sampler=self.valid_sampler,
             num_workers=4,

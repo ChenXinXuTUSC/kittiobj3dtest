@@ -1,5 +1,5 @@
 import utils.registry
 METRIC = utils.registry.Registry("METRIC")
 
-from .base import Metric
+from .base import BaseMetricLog
 from .deeplabv3 import DeepLabV3Metric

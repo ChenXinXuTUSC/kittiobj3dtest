@@ -6,12 +6,11 @@ import argparse
 
 
 import torch
-import torch.utils.data
 
 import core
 
 parser = argparse.ArgumentParser("train.py")
-parser.add_argument("--conf", type=str, help="main configuration yaml file path")
+parser.add_argument("--conf", type=str, help="main config file path")
 
 
 def main():

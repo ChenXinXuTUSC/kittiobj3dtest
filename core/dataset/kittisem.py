@@ -2,19 +2,16 @@ import os
 import os.path as osp
 import easydict
 
-import torch
-import torch.utils.data.dataset
-
 import numpy as np
 
 import utils
 
+from . import DATASET
+from .base import BaseDataset
 from .projproc import snapshot_spherical
 
-from . import DATASET
-
 @DATASET.register
-class KITTISemantic(torch.utils.data.dataset.Dataset):
+class KITTISemantic(BaseDataset):
     def __init__(self, *args, **kwds):
         super().__init__()
         kwds = easydict.EasyDict(kwds)

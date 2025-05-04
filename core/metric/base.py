@@ -1,4 +1,4 @@
-class Metric:
+class BaseMetricLog:
     def __init__(self):
         pass
 
