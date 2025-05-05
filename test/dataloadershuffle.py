@@ -10,7 +10,7 @@ dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
 # 遍历 DataLoader
 for epoch in range(3):
-    print(f"Epoch {epoch+1}:")
-    for batch in dataloader:
-        print(batch)
-    print()
+	print(f"Epoch {epoch+1}:")
+	for batch in dataloader:
+		print(batch)
+	print()

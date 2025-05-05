@@ -4,11 +4,11 @@
 
 ```txt
 Trainer.run():
-    # mp.spawn into ddp mode
-        ddp_entry():
-            ddp_setup()
-            train()
-            ddp_cleanup()
+	# mp.spawn into ddp mode
+		ddp_entry():
+			ddp_setup()
+			train()
+			ddp_cleanup()
 ```
 
 ## 包装方式
@@ -19,15 +19,15 @@ Trainer.run():
 
 ```txt
 ## Model 模型
-    存放相关的模型代码
+	存放相关的模型代码
 ## Dataset 数据集
-    数据集适配代码，用户必须知道自己实现的数据集代码和哪些模型要求的输入是匹配的
+	数据集适配代码，用户必须知道自己实现的数据集代码和哪些模型要求的输入是匹配的
 ## Metric 评估指标
-    训练过程中模型调用的评估指标，模型将所有输出作为依赖参数传递给评估指标函数，在这里负责一些日志的记录，比如 TensorBoard 的可视化图像日志记录
+	训练过程中模型调用的评估指标，模型将所有输出作为依赖参数传递给评估指标函数，在这里负责一些日志的记录，比如 TensorBoard 的可视化图像日志记录
 ## LOSS 损失函数
-    用户必须知道实现的某个损失函数，需要配合哪些模型代码来运行
+	用户必须知道实现的某个损失函数，需要配合哪些模型代码来运行
 ## Conf 配置文件
-    指定一次运行时，配套的 【模型】+【数据集】+【评估指标】+【损失函数】
+	指定一次运行时，配套的 【模型】+【数据集】+【评估指标】+【损失函数】
 ```
 
 # 踩坑
@@ -37,11 +37,11 @@ Trainer.run():
 
 ```python
 if self.world_rank == 0:
-    self.loggertfx = utils.logger.LoggerTXTFX(
-        self.log_alldir, name=self.log_exname
-    )
+	self.loggertfx = utils.logger.LoggerTXTFX(
+		self.log_alldir, name=self.log_exname
+	)
 else:
-    self.loggertfx = None
+	self.loggertfx = None
 ```
 
 只有主进程才拥有日志器。
