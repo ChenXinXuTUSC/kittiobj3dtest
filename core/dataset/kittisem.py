@@ -12,76 +12,83 @@ from .projproc import snapshot_spherical
 
 @DATASET.register
 class KITTISemantic(BaseDataset):
-    def __init__(self, *args, **kwds):
-        super().__init__()
-        kwds = easydict.EasyDict(kwds)
-        self.args = kwds
+	def __init__(self, *args, **kwds):
+		super().__init__()
+		kwds = easydict.EasyDict(kwds)
+		self.args = kwds
 
-        self.split = self.args.split
-        assert self.split in self.args.seqs_split, f"{self.split} not in dataset conf"
+		self.split = self.args.split
+		assert self.split in self.args.seqs_split, f"{self.split} not in dataset conf"
 
-        self.root = osp.join(self.args.root, 'sequences')
-        seq_list = self.args.seqs_split[self.split]
+		self.root = osp.join(self.args.root, 'sequences')
+		seq_list = self.args.seqs_split[self.split]
 
-        self.files = []
+		self.files = []
 
-        for seq_idx in seq_list:
-            seq_dir = osp.join(self.root, seq_idx)
-            data_dir = osp.join(seq_dir, 'velodyne')
-            gdth_dir = osp.join(seq_dir, 'labels')
-            for item in os.listdir(data_dir):
-                fname = osp.splitext(item)[0]
+		for seq_idx in seq_list:
+			seq_dir = osp.join(self.root, seq_idx)
+			data_dir = osp.join(seq_dir, 'velodyne')
+			gdth_dir = osp.join(seq_dir, 'labels')
+			for item in os.listdir(data_dir):
+				fname = osp.splitext(item)[0]
 
-                if osp.exists(osp.join(data_dir, fname+".bin")) and osp.exists(osp.join(gdth_dir, fname+".label")):
-                    self.files.append((
-                        osp.join(data_dir, fname + ".bin"),
-                        osp.join(gdth_dir, fname + ".label")
-                    ))
-        # cls 原始类名 class
-        # idx 连续索引 index
-        # lbl 离散索引 label
-        self.cls2idx = {cls: idx for (idx, cls) in enumerate(self.args.cls_names)}
-        self.idx2cls = {idx: cls for (idx, cls) in enumerate(self.args.cls_names)}
-        self.ldx2idx = {ldx: self.cls2idx[cls] for (cls, ldx) in self.args.cls_lbl.items()}
-        self.pallete = {idx: clr for (idx, clr) in enumerate(self.args.pallete)}
+				if osp.exists(osp.join(data_dir, fname+".bin")) and osp.exists(osp.join(gdth_dir, fname+".label")):
+					self.files.append((
+						osp.join(data_dir, fname + ".bin"),
+						osp.join(gdth_dir, fname + ".label")
+					))
+		# cls 原始类名 class
+		# idx 连续索引 index
+		# lbl 离散索引 label
+		self.cls2idx = {cls: idx for (idx, cls) in enumerate(self.args.cls_names)}
+		self.idx2cls = {idx: cls for (idx, cls) in enumerate(self.args.cls_names)}
+		self.ldx2idx = {ldx: self.cls2idx[cls] for (cls, ldx) in self.args.cls_lbl.items()}
+		self.pallete = {idx: clr for (idx, clr) in enumerate(self.args.pallete)}
 
-    def __len__(self):
-        return len(self.files)
-    
-    def __getitem__(self, index):
-        points = self.__read_points(self.files[index][0])
-        labels = self.__read_labels(self.files[index][1])
-        # transform original discrete label
-        # into contiguous index (from 0 to n-1)
-        for k, v in self.ldx2idx.items():
-            labels[labels == k] = v
+		# 更新批次样本处理函数，填充每个批次的内存布局
+		self.collate_fn_registry["train"] = self.__batch_padding_
+		self.collate_fn_registry["valid"] = self.__batch_padding_
+		self.collate_fn_registry["testt"] = self.__batch_padding_
 
-        proj_img_h = self.args.proj_img_h
-        proj_img_w = self.args.proj_img_w
+	def __len__(self):
+		return len(self.files)
+	
+	def __getitem__(self, index):
+		points = self.__read_points(self.files[index][0])
+		labels = self.__read_labels(self.files[index][1])
+		# transform original discrete label
+		# into contiguous index (from 0 to n-1)
+		for k, v in self.ldx2idx.items():
+			labels[labels == k] = v
 
-        fmap, gdth, rmap = snapshot_spherical(
-            points, labels,
-            img_h=proj_img_h,
-            img_w=proj_img_w
-        )
-        # do smooth on range and intensity channel
-        fmap[0] = utils.image_fill2(fmap[0], 0, 1e-4, 4)
-        fmap[1] = utils.image_fill2(fmap[1], 0, 1e-4, 4)
-        fmap[2] = utils.image_fill2(fmap[2], 0, 1e-4, 4)
-        fmap[3] = utils.image_fill2(fmap[3], 0, 1e-4, 4)
-        fmap[4] = utils.image_fill2(fmap[4], 0, 1e-4, 4)
-        gdth = utils.image_fill2(gdth, 0, 1e-4, 4)
-        fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
+		proj_img_h = self.args.proj_img_h
+		proj_img_w = self.args.proj_img_w
 
-        return fmap, gdth.astype(np.int64)
-    
-    def __read_points(self, path):
-        return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
-    
+		fmap, gdth, rmap = snapshot_spherical(
+			points, labels,
+			img_h=proj_img_h,
+			img_w=proj_img_w
+		)
+		# do smooth on range and intensity channel
+		fmap[0] = utils.image_fill2(fmap[0], 0, 1e-4, 4)
+		fmap[1] = utils.image_fill2(fmap[1], 0, 1e-4, 4)
+		fmap[2] = utils.image_fill2(fmap[2], 0, 1e-4, 4)
+		fmap[3] = utils.image_fill2(fmap[3], 0, 1e-4, 4)
+		fmap[4] = utils.image_fill2(fmap[4], 0, 1e-4, 4)
+		gdth = utils.image_fill2(gdth, 0, 1e-4, 4)
+		fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
 
-    def __read_labels(self, path):
-        labels = np.fromfile(path, dtype=np.uint32).reshape(-1)
-        upper_half = labels >> 16      # get upper half for instances
-        lower_half = labels & 0xFFFF   # get lower half for semantics
-        return lower_half.astype(np.int32)
+		return fmap, gdth.astype(np.int64), rmap
+	
+	def __read_points(self, path):
+		return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
+	
+	def __read_labels(self, path):
+		labels = np.fromfile(path, dtype=np.uint32).reshape(-1)
+		upper_half = labels >> 16	  # get upper half for instances
+		lower_half = labels & 0xFFFF   # get lower half for semantics
+		return lower_half.astype(np.int32)
 
+	def __batch_padding_(self, batch):
+		# todo: padding each sample to the same length
+		return batch
