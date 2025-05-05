@@ -97,7 +97,7 @@ def snapshot_spherical(
 
 	gdth = np.zeros((img_h, img_w), dtype=np.int32)
 	fmap = np.zeros((5, img_h, img_w))
-	rmap = np.stack([img_coord_h, img_coord_w], axis=0)
+	rmap = np.column_stack([points, img_coord_h, img_coord_w])
 	# feature vector [x, y, z, i, r], shape [C, H, W]
 	for i in used:
 		# select the point with nearest range as the feature pixel
