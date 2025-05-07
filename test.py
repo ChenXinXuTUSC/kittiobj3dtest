@@ -22,7 +22,7 @@ conf_main = core.readconfyaml.read("conf/pipe/deeplab+kittisemantic.yaml")
 
 args_dataset = core.readconfyaml.read(conf_main.dataset.conf_yaml)
 args_model   = core.readconfyaml.read(conf_main.model.conf_yaml)
-args_loss	= core.readconfyaml.read(conf_main.loss.conf_yaml)
+args_loss	 = core.readconfyaml.read(conf_main.loss.conf_yaml)
 args_metric  = core.readconfyaml.read(conf_main.metric.conf_yaml)
 
 # %%
@@ -33,7 +33,8 @@ testt_dataset = core.dataset.KITTISemantic(
 
 testt_dataloader = torch.utils.data.DataLoader(
 	dataset=testt_dataset,
-	batch_size=1,
+	collate_fn=testt_dataset.collate_fn("testt"),
+	batch_size=4,
 	shuffle=True,
 	pin_memory=True,
 	drop_last=True
@@ -65,16 +66,34 @@ model = nn.parallel.DistributedDataParallel(
 model.load_state_dict(torch.load("log/test/deeplabv3+kittisem/20250427194725/pth/best_valid.pth"))
 
 # %%
-
-
 model.eval()
-for iter, (data, gdth) in enumerate(testt_dataloader):
-	data = data.to(device).float()
-	gdth = gdth.to(device).long()
-
+for iter, batch in enumerate(testt_dataloader):
+	data, gdth, rmap = batch
 	pred = model(data)
-	pred_img = torch.argmax(pred["out"][0], dim=0).cpu().numpy()
-	pred_img = metriclog.visualize_fmap(pred_img)
+	# pred = torch.argmax(pred["out"], dim=1)
+	# print(pred.shape)
+	# pred_img = torch.argmax(pred["out"][0], dim=0).cpu().numpy()
+	# pred_img = metriclog.visualize_fmap(pred_img)
+
+	# retrive reverse map relationship
+	# rmap = [x["ptpix"][:x["valid"]] for x in rmap]
+	break
+
+# %%
+import utils
+pred = torch.argmax(pred["out"], dim=1)
+rmap = [x["ptpix"][:x["valid"]] for x in rmap]
+
+# %%
+# output labeled points
+pallete = np.array(list(args_dataset.pallete.values()))
+for ptpix, view in zip(rmap, pred):
+	points = ptpix[:, :3]
+	coords = ptpix[:, 4:].astype(np.int32)
+	view = view.cpu().numpy()
+	colors = pallete[view[coords[:, 0], coords[:, 1]]]
+	print(colors)
+	utils.save_pcd(points, colors)
 	break
 
 # %%
@@ -85,8 +104,5 @@ plt.figure(figsize=(12, 6), dpi=128, tight_layout=True)
 plt.axis([WID, 0, 0, HEI])
 plt.axis("off")
 plt.imshow(pred_img, interpolation='nearest')
-
-# %%
-
 
 

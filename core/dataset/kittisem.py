@@ -98,7 +98,6 @@ class KITTISemantic(BaseDataset):
 		gdth = torch.tensor(np.array(gdth), dtype=torch.long)
 		# padding
 		max_rmap_len = max([len(x) for x in rmap])
-		print("here1")
 		rmap = np.array(
 			[
 				(
@@ -115,5 +114,4 @@ class KITTISemantic(BaseDataset):
 				('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))  # 不知道 dataset 传出来的逆投影关系映射一个关系包含多少特征
 			])
 		)
-		print("here2")
 		return data, gdth, rmap
