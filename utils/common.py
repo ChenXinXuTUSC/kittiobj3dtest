@@ -27,6 +27,9 @@ def save_pcd(points: np.ndarray, colors: np.ndarray=None, ds_size: float=0.05, o
 	pcd = o3d.geometry.PointCloud()
 	pcd.points = o3d.utility.Vector3dVector(points)
 	if colors is not None:
+		if colors.max() > 1.0:
+			# normalize to ply color range [0.0, 1.0]
+			colors = colors.astype(np.float32) / 255.0
 		pcd.colors = o3d.utility.Vector3dVector(colors)
 	pcd_ds = pcd.voxel_down_sample(ds_size)
 	o3d.io.write_point_cloud(f"{out_name}.ply", pcd_ds)
