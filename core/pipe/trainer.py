@@ -162,7 +162,7 @@ class Trainer:
 		train_dataloader = self.train_dataloader
 		train_sampler.set_epoch(epoch)
 
-		for iter, (data, gdth) in enumerate(train_dataloader):
+		for iter, (data, gdth, rmap) in enumerate(train_dataloader):
 			data = data.to(self.device).float()
 			gdth = gdth.to(self.device).long()
 

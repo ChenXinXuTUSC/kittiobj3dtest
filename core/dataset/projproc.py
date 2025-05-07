@@ -95,7 +95,7 @@ def snapshot_spherical(
 	used = np.array(list(range(len(coords))))[mask]
 	# print("retained ratio", mask.astype(np.int32).sum() / len(mask))
 
-	gdth = np.zeros((img_h, img_w), dtype=np.int32)
+	gdth = np.zeros((img_h, img_w), dtype=np.int64)
 	fmap = np.zeros((5, img_h, img_w))
 	rmap = np.column_stack([points, img_coord_h, img_coord_w])
 	# feature vector [x, y, z, i, r], shape [C, H, W]

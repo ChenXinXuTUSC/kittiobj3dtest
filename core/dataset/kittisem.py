@@ -4,6 +4,8 @@ import easydict
 
 import numpy as np
 
+import torch
+
 import utils
 
 from . import DATASET
@@ -78,7 +80,7 @@ class KITTISemantic(BaseDataset):
 		gdth = utils.image_fill2(gdth, 0, 1e-4, 4)
 		fmap = utils.normalized_fmap(fmap, [0, 1, 2, 3, 4])
 
-		return fmap, gdth.astype(np.int64), rmap
+		return fmap, gdth, rmap
 	
 	def __read_points(self, path):
 		return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
@@ -89,6 +91,29 @@ class KITTISemantic(BaseDataset):
 		lower_half = labels & 0xFFFF   # get lower half for semantics
 		return lower_half.astype(np.int32)
 
-	def __batch_padding_(self, batch):
-		# todo: padding each sample to the same length
-		return batch
+	def __batch_padding_(self, batch: list):
+		# all are batched data, not single sample
+		data, gdth, rmap = zip(*batch)
+		data = torch.tensor(np.array(data), dtype=torch.float32)
+		gdth = torch.tensor(np.array(gdth), dtype=torch.long)
+		# padding
+		max_rmap_len = max([len(x) for x in rmap])
+		print("here1")
+		rmap = np.array(
+			[
+				(
+					len(x),
+					np.pad(
+						x,
+						((0, max_rmap_len - len(x)), (0, 0)),
+						mode="constant", constant_values=0
+					)
+				) for x in rmap
+			],
+			dtype=np.dtype([
+				('valid', np.int32),
+				('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))  # 不知道 dataset 传出来的逆投影关系映射一个关系包含多少特征
+			])
+		)
+		print("here2")
+		return data, gdth, rmap
