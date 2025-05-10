@@ -48,9 +48,9 @@ class KITTISemantic(BaseDataset):
 		self.pallete = {idx: clr for (idx, clr) in enumerate(self.args.pallete)}
 
 		# 更新批次样本处理函数，填充每个批次的内存布局
-		self.collate_fn_registry["train"] = self.__batch_padding_
-		self.collate_fn_registry["valid"] = self.__batch_padding_
-		self.collate_fn_registry["testt"] = self.__batch_padding_
+		self.collate_fn_registry["train"] = self.__batch_padding__
+		self.collate_fn_registry["valid"] = self.__batch_padding__
+		self.collate_fn_registry["testt"] = self.__batch_padding__
 
 	def __len__(self):
 		return len(self.files)
@@ -91,7 +91,7 @@ class KITTISemantic(BaseDataset):
 		lower_half = labels & 0xFFFF   # get lower half for semantics
 		return lower_half.astype(np.int32)
 
-	def __batch_padding_(self, batch: list):
+	def __batch_padding__(self, batch: list):
 		# all are batched data, not single sample
 		data, gdth, rmap = zip(*batch)
 		data = torch.tensor(np.array(data), dtype=torch.float32)
@@ -114,4 +114,8 @@ class KITTISemantic(BaseDataset):
 				('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))  # 不知道 dataset 传出来的逆投影关系映射一个关系包含多少特征
 			])
 		)
-		return data, gdth, rmap
+		return {
+			"data": data,
+			"gdth": gdth,
+			"rmap": rmap
+		}

@@ -65,15 +65,16 @@ class DeepLabV3Metric(BaseMetricLog):
 
 	# should only be responsible for computing new metrics and store
 	def mct(self,
-		data: torch.Tensor,
-		pred: torch.Tensor,
-		gdth: torch.Tensor,
+		# data: torch.Tensor,
+		# pred: torch.Tensor,
+		# gdth: torch.Tensor,
+		batch
 	):
-		self.data = data
-		self.pred = pred
-		self.gdth = gdth
+		self.data = batch["data"]
+		self.pred = batch["pred"]
+		self.gdth = batch["gdth"]
 
-		iou, acc, rec = self.__compute_metrics(pred, gdth)
+		iou, acc, rec = self.__compute_metrics(self.pred, self.gdth)
 		for c, v in iou.items():
 			self.all_iou[c].append(v)
 		for c, v in acc.items():

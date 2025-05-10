@@ -9,8 +9,8 @@ dataset:
   conf_yaml: "conf/dataset/KITTISemantic.yaml"
 
 loss:
-  cls_name: "DeepLabV3_KITTISemantic_Loss"
-  conf_yaml: "conf/loss/DeepLabV3_KITTISemantic_Loss.yaml"
+  cls_name: "DeepLabV3Loss"
+  conf_yaml: "conf/loss/DeepLabV3Loss.yaml"
 
 metric:
   cls_name: "DeepLabV3Metric"

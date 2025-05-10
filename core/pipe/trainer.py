@@ -150,33 +150,39 @@ class Trainer:
 
 		self.metriclog.reset()
 		for epoch in range(self.num_epochs):
-			self.train_epoch(epoch)
+			# self.train_epoch(epoch)
 			self.valid_epoch(epoch)
 			self.scheduler.step()
 
 	def train_epoch(self, epoch: int):
-		model = self.model
-		model.train()
+		lossf = self.criterion
+		mtlog = self.metriclog
+		tflog = self.loggertfx
 
 		train_sampler = self.train_sampler
 		train_dataloader = self.train_dataloader
 		train_sampler.set_epoch(epoch)
 
-		for iter, (data, gdth, rmap) in enumerate(train_dataloader):
-			data = data.to(self.device).float()
-			gdth = gdth.to(self.device).long()
+		optimizer = self.optimizer
 
-			pred = model(data)
-			loss = self.criterion(pred, gdth)
+		model = self.model
+		model.train()
 
-			self.optimizer.zero_grad()
+		for iter, batch in enumerate(train_dataloader):
+			batch = self.__to_device__(batch, self.device)
+
+			pred = model(batch)
+			batch["pred"] = pred # add prediction to batched data dict
+			loss = lossf(batch)
+
+			optimizer.zero_grad()
 			loss.backward()
-			self.optimizer.step()
+			optimizer.step()
 
-			self.metriclog.mct(data, pred, gdth)
+			mtlog.mct(batch)
 			if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-				self.metriclog.log(
-					self.loggertfx,
+				mtlog.log(
+					tflog,
 					prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
 					tfbtag="train",
 					step=epoch * len(self.train_dataloader) + iter,
@@ -191,28 +197,33 @@ class Trainer:
 			)
 
 	def valid_epoch(self, epoch: int):
-		model = self.model
-		model.eval()
+		# just for abbreviation
+		lossf = self.criterion
+		mtlog = self.metriclog
+		tflog = self.loggertfx
 
 		valid_sampler = self.valid_sampler
 		valid_dataloader = self.valid_dataloader
 
-		self.metriclog.reset() # 重置指标，去除训练阶段累积
+		model = self.model
+		model.eval()
+
+		mtlog.reset() # 重置指标，去除训练阶段累积
 		with torch.no_grad():
 			valid_sampler.set_epoch(epoch)
-			for iter, (data, gdth) in enumerate(valid_dataloader):
-				data = data.to(self.device).float()
-				gdth = gdth.to(self.device).long()
+			for iter, batch in enumerate(valid_dataloader):
+				batch = self.__to_device__(batch, self.device)
 
-				pred = model(data)
-				loss = self.criterion(pred, gdth)
+				pred = model(batch)
+				batch["pred"] = pred
+				loss = lossf(batch)
 
 				# record current iter's metric info
-				self.metriclog.mct(data, pred, gdth)
+				mtlog.mct(batch)
 
 				if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-					self.metriclog.log(
-						self.loggertfx,
+					mtlog.log(
+						tflog,
 						prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader):.2f}%]",
 						tfbtag="valid",
 						step=epoch * len(self.valid_dataloader) + iter,
@@ -220,10 +231,27 @@ class Trainer:
 					)
 
 		if self.world_rank == 0:
-			if self.metriclog.best():
-				self.loggertfx.txt.info(
+			if mtlog.best():
+				tflog.txt.info(
 					f"save a new best metric ckp: {self.metriclog.mean()}"
 				)
 				torch.save(self.model.state_dict(), osp.join(self.ckpt_save_path, "best_valid.pth"))
 		# 每个 epoch 重制一次指标累积
-		self.metriclog.reset()
+		mtlog.reset()
+
+	def __to_device__(self, batch, device: torch.device):
+		'''
+		[deepseek generated] recursively move all torch.Tensor type object
+		to specified device.
+		'''
+		if isinstance(batch, torch.Tensor):
+			return batch.to(device)
+		# 处理字典类型（Key保持不变，只移动Value）
+		elif isinstance(batch, dict):  # 包括 dict 及其他映射类型
+			return {k: self.__to_device__(v, device) for k, v in batch.items()}
+		# 处理其他可迭代对象（list/tuple/set等）
+		elif isinstance(batch, list) and not isinstance(batch, (str, bytes)):
+			return [self.__to_device__(x, device) for x in batch]
+		# 非迭代、非Tensor对象直接返回
+		else:
+			return batch

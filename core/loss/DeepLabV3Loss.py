@@ -6,7 +6,7 @@ import easydict
 from . import LOSS
 
 @LOSS.register
-class DeepLabV3_KITTIObj3d_Loss(nn.Module):
+class DeepLabV3Loss(nn.Module):
 	def __init__(self, *args, **kwds):
 		super().__init__()
 		kwds = easydict.EasyDict(kwds)
@@ -22,7 +22,10 @@ class DeepLabV3_KITTIObj3d_Loss(nn.Module):
 			ignore_index=self.ignore_index
 		)
 	
-	def forward(self, pred, gdth):
+	def forward(self, batch):
+		pred = batch["pred"]
+		gdth = batch["gdth"]
+
 		loss_out = self.loss_fn(pred["out"], gdth)
 		loss_aux = self.loss_fn(pred["aux"], gdth)
 		loss = loss_out + 0.5 * loss_aux

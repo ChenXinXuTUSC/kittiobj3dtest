@@ -31,7 +31,9 @@ class DeepLabV3(nn.Module):
 		self.deeplab.classifier[-1] = nn.Conv2d(256, out_channels, kernel_size=(1, 1), stride=(1, 1))
 		self.deeplab.aux_classifier[-1] = nn.Conv2d(256, out_channels, kernel_size=(1, 1), stride=(1, 1))
 	
-	def forward(self, data: torch.Tensor):
+	def forward(self, batch: torch.Tensor):
+		data = batch["data"]
+		
 		old_shape = data.shape[2:]
 
 		data = F.interpolate(data, scale_factor=((224-1)/old_shape[0]+1, (224-1)/old_shape[1]+1), mode="bilinear", align_corners=True)
