@@ -1,1 +1,1 @@
-from .readconfyaml import *
+from .conf import *

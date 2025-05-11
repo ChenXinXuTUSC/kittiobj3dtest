@@ -5,7 +5,7 @@ __pycache__/
 build/
 log/
 results/
-notebook/hub/
+notebook/
 hub/
 *.out
 *.err

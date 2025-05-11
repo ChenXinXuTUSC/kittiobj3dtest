@@ -18,12 +18,12 @@ import numpy as np
 import core
 
 # %%
-conf_main = core.readconfyaml.read("conf/pipe/deeplab+kittisemantic.yaml")
+conf_main = core.conf.read("conf/pipe/deeplab+kittisemantic.yaml")
 
-args_dataset = core.readconfyaml.read(conf_main.dataset.conf_yaml)
-args_model   = core.readconfyaml.read(conf_main.model.conf_yaml)
-args_loss	 = core.readconfyaml.read(conf_main.loss.conf_yaml)
-args_metric  = core.readconfyaml.read(conf_main.metric.conf_yaml)
+args_dataset = core.conf.read(conf_main.dataset.conf_yaml)
+args_model   = core.conf.read(conf_main.model.conf_yaml)
+args_loss	 = core.conf.read(conf_main.loss.conf_yaml)
+args_metric  = core.conf.read(conf_main.metric.conf_yaml)
 
 # %%
 testt_dataset = core.dataset.KITTISemantic(

@@ -9,8 +9,8 @@ dataset:
   conf_yaml: "conf/dataset/KITTIObj3d.yaml"
 
 loss:
-  cls_name: "DeepLabV3_KITTIObj3d_Loss"
-  conf_yaml: "conf/loss/DeepLabV3_KITTIObj3d_Loss.yaml"
+  cls_name: "DeepLabV3Loss"
+  conf_yaml: "conf/loss/DeepLabV3Loss.yaml"
 
 metric:
   cls_name: "DeepLabV3Metric"
@@ -18,7 +18,7 @@ metric:
 
 log:
   log_interv: 10
-  log_alldir: "log"
+  log_alldir: "log/test"
 
 train:
   lr: 0.001

@@ -1,0 +1,112 @@
+bkgcls_idx = 0
+bg_clsname = "DontCare"
+ignore_cls = -1
+
+cls_names = [
+	"unlabeled",
+	"outlier",
+	"car",
+	"bicycle",
+	"bus",
+	"motorcycle",
+	"on-rails",
+	"truck",
+	"other-vehicle",
+	"person",
+	"bicyclist",
+	"motorcyclist",
+	"road",
+	"parking",
+	"sidewalk",
+	"other-ground",
+	"building",
+	"fence",
+	"other-structure",
+	"lane-marking",
+	"vegetation",
+	"trunk",
+	"terrain",
+	"pole",
+	"traffic-sign",
+	"other-object",
+	"moving-car",
+	"moving-bicyclist",
+	"moving-person",
+	"moving-motorcyclist",
+	"moving-on-rails",
+	"moving-bus",
+	"moving-truck",
+	"moving-other-vehicle"
+]
+
+[cls_idx]
+	unlabeled = 0
+	outlier = 1
+	car = 10
+	bicycle = 11
+	bus = 13
+	motorcycle = 15
+	on-rails = 16
+	truck = 18
+	other-vehicle = 20
+	person = 30
+	bicyclist = 31
+	motorcyclist = 32
+	road = 40
+	parking = 44
+	sidewalk = 48
+	other-ground = 49
+	building = 50
+	fence = 51
+	other-structure = 52
+	lane-marking = 60
+	vegetation = 70
+	trunk = 71
+	terrain = 72
+	pole = 80
+	traffic-sign = 81
+	other-object = 99
+	moving-car = 252
+	moving-bicyclist = 253
+	moving-person = 254
+	moving-motorcyclist = 255
+	moving-on-rails = 256
+	moving-bus = 257
+	moving-truck = 258
+	moving-other-vehicle = 259
+
+[pallete]
+	unlabeled = [0, 0, 0]
+	outlier = [0, 0, 255]
+	car = [245, 150, 100]
+	bicycle = [245, 230, 100]
+	bus = [250, 80, 100]
+	motorcycle = [150, 60, 30]
+	on-rails = [255, 0, 0]
+	truck = [180, 30, 80]
+	other-vehicle = [255, 0, 0]
+	person = [30, 30, 255]
+	bicyclist = [200, 40, 255]
+	motorcyclist = [90, 30, 150]
+	road = [255, 0, 255]
+	parking = [255, 150, 255]
+	sidewalk = [75, 0, 75]
+	other-ground = [75, 0, 175]
+	building = [0, 200, 255]
+	fence = [50, 120, 255]
+	other-structure = [0, 150, 255]
+	lane-marking = [170, 255, 150]
+	vegetation = [0, 175, 0]
+	trunk = [0, 60, 135]
+	terrain = [80, 240, 150]
+	pole = [150, 240, 255]
+	traffic-sign = [0, 0, 255]
+	other-object = [255, 255, 50]
+	moving-car = [245, 150, 100]
+	moving-bicyclist = [255, 0, 0]
+	moving-person = [200, 40, 255]
+	moving-motorcyclist = [30, 30, 255]
+	moving-on-rails = [90, 30, 150]
+	moving-bus = [250, 80, 100]
+	moving-truck = [180, 30, 80]
+	moving-other-vehicle = [255, 0, 0]

@@ -1,0 +1,26 @@
+exp_name = "deeplabv3+kittiobj3d"
+
+[model]
+	name = "DeepLabV3"
+	conf = "conf/model/DeepLabV3.toml"
+
+[dataset]
+	name = "KITTIObj3d"
+	conf = "conf/dataset/KITTIObj3d.toml"
+
+[loss]
+	name = "DeepLabV3Loss"
+	conf = "conf/loss/DeepLabV3Loss.toml"
+
+[metric]
+	name = "DeepLabV3Metric"
+	conf = "conf/metric/DeepLabV3Metric.toml"
+
+[log]
+	log_interv = 10
+	log_alldir = "log/test"
+
+[train]
+	lr = 0.001
+	batch_size = 8
+	num_epochs = 50

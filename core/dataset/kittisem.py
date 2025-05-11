@@ -56,8 +56,8 @@ class KITTISemantic(BaseDataset):
 		return len(self.files)
 	
 	def __getitem__(self, index):
-		points = self.__read_points(self.files[index][0])
-		labels = self.__read_labels(self.files[index][1])
+		points = self.__read_points__(self.files[index][0])
+		labels = self.__read_labels__(self.files[index][1])
 		# transform original discrete label
 		# into contiguous index (from 0 to n-1)
 		for k, v in self.ldx2idx.items():
@@ -82,10 +82,10 @@ class KITTISemantic(BaseDataset):
 
 		return fmap, gdth, rmap
 	
-	def __read_points(self, path):
+	def __read_points__(self, path):
 		return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
 	
-	def __read_labels(self, path):
+	def __read_labels__(self, path):
 		labels = np.fromfile(path, dtype=np.uint32).reshape(-1)
 		upper_half = labels >> 16	  # get upper half for instances
 		lower_half = labels & 0xFFFF   # get lower half for semantics

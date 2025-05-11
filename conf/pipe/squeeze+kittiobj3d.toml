@@ -1,0 +1,26 @@
+exp_name = "squeezeseg+kittiobj3d"
+
+[model]
+	name = "SqueezeSeg"
+	conf = "KITTIObj3d"
+
+[dataset]
+	name = "KITTIObj3d"
+	conf = "conf/dataset/KITTIObj3d.toml"
+
+[loss]
+	name = "SqueezeSegLoss"
+	conf = "conf/loss/SqueezeSegLoss.toml"
+
+[metric]
+	name = "SqueezeSegMetric"
+	conf = "conf/metric/SqueezeSeg.toml"
+
+[log]
+	log_alldir = "log"
+	log_interv = 10
+
+[train]
+	lr = 0.001
+	batch_size = 8
+	num_epochs = 50
