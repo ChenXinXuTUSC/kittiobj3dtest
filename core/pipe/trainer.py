@@ -150,7 +150,7 @@ class Trainer:
 
 		self.metriclog.reset()
 		for epoch in range(self.num_epochs):
-			# self.train_epoch(epoch)
+			self.train_epoch(epoch)
 			self.valid_epoch(epoch)
 			self.scheduler.step()
 
