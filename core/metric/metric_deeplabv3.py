@@ -7,7 +7,7 @@ from tabulate import tabulate
 
 import utils
 
-from .base import BaseMetricLog
+from .metric_base import BaseMetricLog
 from . import METRIC
 @METRIC.register
 class DeepLabV3Metric(BaseMetricLog):

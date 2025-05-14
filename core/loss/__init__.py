@@ -1,5 +1,5 @@
 import utils.registry
 LOSS = utils.registry.Registry("LOSS")
 
-from .deeplabv3 import DeepLabV3Loss
-from .squeezeseg import SqueezeSegLoss
+from .loss_deeplabv3 import DeepLabV3Loss
+from .loss_squeezeseg import SqueezeSegLoss

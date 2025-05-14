@@ -10,7 +10,7 @@ import easydict
 import utils
 
 from . import DATASET
-from .base import BaseDataset
+from .dataset_base import BaseDataset
 
 from .projproc import snapshot_spherical
 

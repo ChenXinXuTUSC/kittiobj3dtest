@@ -70,7 +70,7 @@ class SqueezeSeg(nn.Module):
 		self.args = kwds
 
 		in_channels = kwds.in_channels
-		out_channels = kwds.num_classes
+		out_channels = kwds.out_channels
 
 		self.num_classes = out_channels
 
