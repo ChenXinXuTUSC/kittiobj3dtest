@@ -3,8 +3,8 @@ root = "data/kittiobj3d"
 train_set_ratio = 0.7
 valid_set_ratio = 0.3
 
-proj_img_w = 512
-proj_img_h = 64
+proj_img_h = 128
+proj_img_w = 1024
 
 kitti_obj3d_det_cls_names = [
     "DontCare",

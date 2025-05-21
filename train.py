@@ -3,7 +3,7 @@ import os.path as osp
 os.environ["TORCH_HOME"] = "."
 
 import argparse
-
+from pprint import pprint
 
 import torch
 
@@ -16,7 +16,7 @@ parser.add_argument("--conf", type=str, help="main config file path")
 def main():
 	args = parser.parse_args()
 	conf_main = core.conf.read(args.conf)
-	
+	pprint(conf_main)
 	args_dataset = core.conf.read(conf_main.dataset.conf)
 	args_model   = core.conf.read(conf_main.model.conf)
 	args_loss	 = core.conf.read(conf_main.loss.conf)

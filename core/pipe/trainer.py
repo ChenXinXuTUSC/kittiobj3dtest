@@ -179,9 +179,9 @@ class Trainer:
 			loss.backward()
 			optimizer.step()
 
-			mtlog.mct(batch)
+			mtlog.update_metrics(batch)
 			if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-				mtlog.log(
+				mtlog.log_metrics(
 					tflog,
 					prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
 					tfbtag="train",
@@ -219,10 +219,10 @@ class Trainer:
 				loss = lossf(batch)
 
 				# record current iter's metric info
-				mtlog.mct(batch)
+				mtlog.update_metrics(batch)
 
 				if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-					mtlog.log(
+					mtlog.log_metrics(
 						tflog,
 						prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader):.2f}%]",
 						tfbtag="valid",

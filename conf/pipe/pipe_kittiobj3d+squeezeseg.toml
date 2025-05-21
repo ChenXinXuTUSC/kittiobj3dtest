@@ -12,15 +12,15 @@ exp_name = "squeezeseg+kittiobj3d"
 	name = "SqueezeSegLoss"
 	conf = "conf/loss/loss_squeezeseg.toml"
 
-[metric] # 直接服用 deeplabv3 的指标计算逻辑先
-	name = "DeepLabV3Metric"
-	conf = "conf/metric/metric_deeplabv3.toml"
+[metric]
+	name = "SqueezeSegMetric"
+	conf = "conf/metric/metric_squeezeseg.toml"
 
 [log]
-	log_alldir = "log"
+	log_alldir = "log/test"
 	log_interv = 10
 
 [train]
 	lr = 0.001
-	batch_size = 8
+	batch_size = 16
 	num_epochs = 50

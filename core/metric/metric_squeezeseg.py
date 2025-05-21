@@ -9,8 +9,9 @@ import utils
 
 from .metric_base import BaseMetricLog
 from . import METRIC
+
 @METRIC.register
-class DeepLabV3Metric(BaseMetricLog):
+class SqueezeSegMetric(BaseMetricLog):
 	def __init__(self, *args, **kwds):
 		super().__init__()
 
@@ -64,12 +65,7 @@ class DeepLabV3Metric(BaseMetricLog):
 		return new_best
 
 	# should only be responsible for computing new metrics and store
-	def update_metrics(self,
-		# data: torch.Tensor,
-		# pred: torch.Tensor,
-		# gdth: torch.Tensor,
-		batch
-	):
+	def update_metrics(self, batch):
 		self.data = batch["data"]
 		self.pred = batch["pred"]
 		self.gdth = batch["gdth"]
@@ -88,13 +84,6 @@ class DeepLabV3Metric(BaseMetricLog):
 		self.mean_metric["iou"].append(mean_iou)
 		self.mean_metric["acc"].append(mean_acc)
 		self.mean_metric["rec"].append(mean_rec)
-
-		# if mean_iou > self.best_metric:
-		#	 self.best_metric = mean_iou
-		# if mean_acc > self.best_metric["acc"]:
-		#	 self.best_metric["acc"] = mean_acc
-		# if mean_rec > self.best_metric["rec"]:
-		#	 self.best_metric["rec"] = mean_rec
 	
 	# console and tensorboard log
 	# print the last computed metric
@@ -141,7 +130,7 @@ class DeepLabV3Metric(BaseMetricLog):
 		# 原始特征图数据特征通道是 [x, y, z, i, r] ，最后一维是深度特征
 		fmap_img = data[0][4].cpu().numpy()
 		# 用户应该知晓自己的模型输出是什么，然后在这里自己处理
-		pred_img = torch.argmax(pred["out"][0], dim=0).cpu().numpy()
+		pred_img = torch.argmax(pred[0], dim=0).cpu().numpy()
 		gdth_img = gdth[0].cpu().numpy()
 
 		# add color
@@ -162,7 +151,6 @@ class DeepLabV3Metric(BaseMetricLog):
 
 	def __compute_metrics(self, pred: torch.Tensor, gdth: torch.Tensor):
 		# pred 和 gdth 是形状为 (batch_size, height, width) 的张量
-		pred = pred["out"] # 预测结果具体使用方式见模型的 forward 函数返回值
 		if len(pred.shape) > 3:
 			pred = torch.argmax(pred, dim=1)
 		
@@ -172,7 +160,6 @@ class DeepLabV3Metric(BaseMetricLog):
 		# 只计算在 gdth 中出现的类别
 		for c in torch.unique(gdth):
 			c = c.item()
-			# 忽略指定的类别，如背景
 			if c == self.ignore_cls or c == self.bkgcls_idx:
 				continue
 			# 计算 TP, TN, FP, FN
@@ -195,6 +182,6 @@ class DeepLabV3Metric(BaseMetricLog):
 		- fmap: [H, W] shape
 		'''
 		img = np.zeros((*fmap.shape[:2], 3), dtype=np.uint8)
-		for idx, clr in enumerate(self.pallete.values()):
+		for idx, clr in enumerate(self.pallete):
 			img[fmap == idx] = np.array(clr)
 		return img
