@@ -1,0 +1,26 @@
+exp_name = "deeplabv3+kittisem"
+
+[model]
+	name = "DeepLabV3"
+	conf = "conf/model/DeepLabV3_KITTISemantic.yaml"
+
+[dataset]
+	name = "KITTISemantic"
+	conf = "conf/dataset/KITTISemantic.yaml"
+
+[loss]
+	name = "DeepLabV3Loss"
+	conf = "conf/loss/DeepLabV3Loss.yaml"
+
+[metric]
+	name = "DeepLabV3Metric"
+	conf = "conf/metric/DeepLabV3Metric.yaml"
+
+[log]
+	log_interv = 10
+	log_alldir = "log/test"
+
+[train]
+	lr = 0.001
+	batch_size = 4
+	num_epochs = 10
