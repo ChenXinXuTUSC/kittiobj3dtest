@@ -12,7 +12,6 @@ import torch.nn.functional as F
 import easydict
 
 from . import MODEL
-
 @MODEL.register
 class DeepLabV3(nn.Module):
 	def __init__(self, *args, **kwds):

@@ -7,3 +7,4 @@ DATASET = utils.registry.Registry("DATASET")
 from .dataset_base import BaseDataset
 from .dataset_kittiobj3d import KITTIObj3d
 from .dataset_kittisem import KITTISemantic
+from .dataset_partanno import PartAnno

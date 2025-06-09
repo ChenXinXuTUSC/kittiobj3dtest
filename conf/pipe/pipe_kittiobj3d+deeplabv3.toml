@@ -1,4 +1,4 @@
-exp_name = "deeplabv3+kittiobj3d"
+exp_name = "kittiobj3d+deeplabv3"
 
 [model]
 	name = "DeepLabV3"
@@ -22,5 +22,5 @@ exp_name = "deeplabv3+kittiobj3d"
 
 [train]
 	lr = 0.001
-	batch_size = 8
+	batch_size = 4
 	num_epochs = 50

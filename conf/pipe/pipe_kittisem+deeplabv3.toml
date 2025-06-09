@@ -1,4 +1,4 @@
-exp_name = "deeplabv3+kittisem"
+exp_name = "kittisem+deeplabv3"
 
 [model]
 	name = "DeepLabV3"

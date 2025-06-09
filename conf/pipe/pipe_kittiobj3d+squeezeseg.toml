@@ -1,4 +1,4 @@
-exp_name = "squeezeseg+kittiobj3d"
+exp_name = "kittiobj3d+squeezeseg"
 
 [model]
 	name = "SqueezeSeg"
