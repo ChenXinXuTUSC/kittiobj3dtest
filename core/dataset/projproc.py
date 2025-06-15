@@ -187,3 +187,128 @@ def snapshot_orthognal(
 			gdth[img_coord_h[i], img_coord_w[i]] = labels[i]
 			
 	return gdth, rmap
+
+def snapshot_voxel(
+	coords: np.ndarray, labels: np.ndarray,
+	voxel_size: float, resolution: list, 
+	cam_pos, eye_pos
+):
+	'''
+	Params
+	-
+	* coords: np.ndarray, (N, 3), not point features, but point coordinates
+	* labels: np.ndarray, (N, )
+	* voxel_size: float
+	* resolution: list, tuple - (H, W)
+	* cam_pos: np.ndarray, list, tuple - initial camera position
+	* eye_pos: np.ndarray, list, tuple	- where camera towards
+	Return
+	-
+	* feat_map: np.ndarray, (H, W) - feature map with each pixel labeled class index
+	'''
+	if not isinstance(coords, np.ndarray):
+		raise TypeError("coords must be np.ndarray")
+	if not isinstance(labels, np.ndarray):
+		raise TypeError("labels must be np.ndarray")
+	if not isinstance(voxel_size, float):
+		raise TypeError("voxel_size must be float")
+	if not isinstance(resolution, np.ndarray):
+		if isinstance(resolution, list) or isinstance(resolution, tuple):
+			resolution = np.array(resolution, dtype=np.int32)
+		else:
+			raise TypeError("cam_pos must be np.ndarray/list/tuple")
+	if not isinstance(cam_pos, np.ndarray):
+		if isinstance(cam_pos, list) or isinstance(cam_pos, tuple):
+			cam_pos = np.array(cam_pos, dtype=np.float32)
+		else:
+			raise TypeError("cam_pos must be np.ndarray/list/tuple")
+	if not isinstance(eye_pos, np.ndarray):
+		if isinstance(eye_pos, list) or isinstance(eye_pos, tuple):
+			eye_pos = np.array(eye_pos, dtype=np.float32)
+		else:
+			raise TypeError("eye_pos must be np.ndarray/list/tuple")
+
+	import utils
+	# make a copy of the original points
+	coords = coords.copy()
+	orgidx = np.arange(len(coords))
+
+	# 移动视点至投影中心
+	coords  -= eye_pos
+	cam_pos -= eye_pos
+	cam_pos /= np.linalg.norm(cam_pos)
+
+
+	# cam_pos 现在就是投影轴，设 cam_pos 为 z 轴，投影平面为 x-y 平面，将 cam_pos 变换至 [0,0,1] z 轴
+	R = utils.A2B_R(cam_pos, np.array([0,0,1]))
+	# 与 X-Y 平面轴对齐
+	coords = coords @ R.T
+	
+	# 根据 range 限定的范围，裁剪点云（给定以 cam_pos 为中心的长宽，单位为米，只裁剪 X-Y 平面，Z 轴无限制）
+	coords_vxlzed = (coords // voxel_size).astype(np.int32)
+	# 保留拍摄栅格范围内的体素
+	mask  = np.abs(coords_vxlzed[:, 0]) < (resolution[0] // 2)
+	mask &= np.abs(coords_vxlzed[:, 1]) < (resolution[1] // 2)
+
+	coords_vxlzed_clipped = coords_vxlzed[mask]
+	labels_clipped = labels[mask]
+	orgidx_clipped = orgidx[mask]
+
+	# 转换为屏幕栅格坐标系
+	corner = coords_vxlzed_clipped.min(axis=0)
+	coords_vxlzed_clipped = coords_vxlzed_clipped - corner
+	
+	# voxels = np.zeros((*(coords_vxlzed.max(axis=0) + 1), labels.max() + 1), dtype=np.int32)
+	voxels = np.zeros((
+		resolution[0],
+		resolution[1],
+		coords_vxlzed_clipped.max(axis=0)[2] + 1,
+		labels.max() + 1
+	), dtype=np.int32)
+	np.add.at(voxels, (*coords_vxlzed_clipped.T, labels_clipped), 1)
+
+	# 每个体素的类别取类别计数最高的那个类别
+	voxels = voxels.argmax(axis=-1)
+
+	# 1. 提取非空体素坐标 nz_idxs = non_zero_indices
+	nz_idxs = np.nonzero(voxels)
+	# 以 Z 轴投影方向平面上体素横纵坐标
+	nz_idxs_xy_tuple = np.array(list(zip(nz_idxs[0], nz_idxs[1])), dtype=[('x', 'int'), ('y', 'int')])
+	
+	# 2. 提取非空体素坐标中的第一个非重复坐标
+	_, nz_nz_idxs = np.unique(nz_idxs_xy_tuple, return_index=True)
+
+	data = np.zeros((4, *(voxels.shape[:2])), dtype=np.int32) # 特征包括 (x,y,z,d) 也即原始三维空间位置和投影深度
+	gdth = np.zeros(voxels.shape[:2], dtype=np.int32)
+
+	# 原始空间位置
+	origin_voxel_coords = np.stack(nz_idxs).T + corner
+	origin_voxel_coords = origin_voxel_coords @ R
+
+	data[0:3, nz_idxs[0][nz_nz_idxs], nz_idxs[1][nz_nz_idxs]] = origin_voxel_coords[nz_nz_idxs].T
+	# data[0][nz_idxs[0][nz_nz_idxs], nz_idxs[1][nz_nz_idxs]] = nz_idxs[0][nz_nz_idxs] - corner[0]
+	# data[1][nz_idxs[0][nz_nz_idxs], nz_idxs[1][nz_nz_idxs]] = nz_idxs[1][nz_nz_idxs] - corner[1]
+	# data[2][nz_idxs[0][nz_nz_idxs], nz_idxs[1][nz_nz_idxs]] = nz_idxs[2][nz_nz_idxs] - corner[2]
+	# 构造深度图，Z 轴索引等价于深度
+	data[3][nz_idxs[0][nz_nz_idxs], nz_idxs[1][nz_nz_idxs]] = nz_idxs[2][nz_nz_idxs]
+
+	# 构造语义分割图
+	gdth[
+		nz_idxs[0][nz_nz_idxs],
+		nz_idxs[1][nz_nz_idxs]
+	] = voxels [
+		nz_idxs[0][nz_nz_idxs],
+		nz_idxs[1][nz_nz_idxs],
+		nz_idxs[2][nz_nz_idxs]
+	]
+
+	# 构造原始点云索引索引到投影图像素的映射
+	coords_vxlzed_clipped_xy_tuple = np.array(
+		list(zip(coords_vxlzed_clipped[:, 0], coords_vxlzed_clipped[:, 1])),
+		dtype=[('x', 'int'), ('y', 'int')]
+	)
+	# 这个掩码标记了那些存在于非空体素中的点云的索引
+	mask = np.isin(coords_vxlzed_clipped_xy_tuple, nz_idxs_xy_tuple[nz_nz_idxs])
+	rmap = np.hstack([orgidx_clipped.reshape(-1, 1), coords_vxlzed_clipped[mask, :2]])
+
+	return data, gdth, rmap
