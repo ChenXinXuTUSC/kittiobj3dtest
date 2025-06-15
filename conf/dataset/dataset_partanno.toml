@@ -8,6 +8,8 @@ valid_set_ratio = 0.3
 proj_img_h = 128
 proj_img_w = 128
 
+selected_cls_name = "Airplane"
+
 cls_names = [
 	"Airplane",
 	"Bag",
@@ -44,3 +46,8 @@ cls_names = [
 	Rocket 		= "04099429"
 	Skateboard 	= "04225987"
 	Table 		= "04379243"
+
+[seqs_split]
+	train = 0.7
+	valid = 0.2
+	testt = 0.1
