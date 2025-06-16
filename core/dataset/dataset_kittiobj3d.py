@@ -12,7 +12,7 @@ import utils
 from . import DATASET
 from .dataset_base import BaseDataset
 
-from .projproc import snapshot_spherical
+from ...utils.projproc import snapshot_spherical
 
 
 @DATASET.register
