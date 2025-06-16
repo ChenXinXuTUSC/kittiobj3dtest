@@ -273,8 +273,14 @@ def snapshot_voxel(
 	# 1. 提取非空体素坐标 nz_idxs = non_zero_indices
 	nz_idxs = np.nonzero(voxels)
 	# 以 Z 轴投影方向平面上体素横纵坐标
-	nz_idxs_xy_tuple = np.array(list(zip(nz_idxs[0], nz_idxs[1])), dtype=[('x', 'int'), ('y', 'int')])
-	
+	nz_idxs_xy_tuple = np.array(
+		list(zip(nz_idxs[0], nz_idxs[1])), 
+		dtype=[('x', 'int'), ('y', 'int')]
+	)
+	nz_idxs_xyz_tuple = np.array(
+		list(zip(nz_idxs[0], nz_idxs[1], nz_idxs[2])),
+		dtype=[('x', 'int'), ('y', 'int'), ('z', 'int')]
+	)
 	# 2. 提取非空体素坐标中的第一个非重复坐标
 	_, nz_nz_idxs = np.unique(nz_idxs_xy_tuple, return_index=True)
 
@@ -303,12 +309,12 @@ def snapshot_voxel(
 	]
 
 	# 构造原始点云索引索引到投影图像素的映射
-	coords_vxlzed_clipped_xy_tuple = np.array(
-		list(zip(coords_vxlzed_clipped[:, 0], coords_vxlzed_clipped[:, 1])),
-		dtype=[('x', 'int'), ('y', 'int')]
+	coords_vxlzed_clipped_xyz_tuple = np.array(
+		list(zip(coords_vxlzed_clipped[:, 0], coords_vxlzed_clipped[:, 1], coords_vxlzed_clipped[:, 2])),
+		dtype=[('x', 'int'), ('y', 'int'), ('z', 'int')]
 	)
-	# 这个掩码标记了那些存在于非空体素中的点云的索引
-	mask = np.isin(coords_vxlzed_clipped_xy_tuple, nz_idxs_xy_tuple[nz_nz_idxs])
-	rmap = np.hstack([orgidx_clipped.reshape(-1, 1), coords_vxlzed_clipped[mask, :2]])
+	# 掩码标记被摄像头拍摄到的一面的点云所属的表面体素
+	mask = np.isin(coords_vxlzed_clipped_xyz_tuple, nz_idxs_xyz_tuple[nz_nz_idxs])
+	rmap = np.hstack([orgidx_clipped.reshape(-1, 1)[mask], coords_vxlzed_clipped[mask, :2]])
 
 	return data, gdth, rmap
