@@ -38,8 +38,8 @@ class Embedding(nn.Module):
 	):
 		super().__init__()
 
-		assert isinstance(image_shape, tuple) \
-			and len(image_shape) == 2, f"wrong shape type {image_shape}"
+		assert isinstance(image_shape, tuple) or isinstance(image_shape, list) and len(image_shape) == 2, \
+			f"wrong shape type {type(image_shape)}: {image_shape}"
 
 		self.patch_embedding = PatchEmbedding(
 			patch_shape,

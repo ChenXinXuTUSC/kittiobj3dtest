@@ -4,3 +4,4 @@ MODEL = utils.registry.Registry("MODEL")
 
 from .model_squeezeseg import SqueezeSeg
 from .model_deeplabv3 import DeepLabV3
+from .model_transunetmini import TransUNetMini

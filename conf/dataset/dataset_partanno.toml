@@ -1,14 +1,23 @@
-root = "partanno"
+root = "data/partanno"
 
 used_class = "Airplane"
 
 train_set_ratio = 0.7
 valid_set_ratio = 0.3
 
-proj_img_h = 128
-proj_img_w = 128
+voxel_size = 0.025
 
-selected_cls_name = "Airplane"
+proj_img_h = 32
+proj_img_w = 32
+
+proj_axis_list = [
+	[0, 1, 1],
+	[1, 0, 1],
+	[1, 1, 0],
+	[0, -1, -1],
+	[-1, 0, -1],
+	[-1, -1, 0]
+]
 
 cls_names = [
 	"Airplane",
@@ -29,23 +38,25 @@ cls_names = [
 	"Table"
 ]
 
+selected_cls_name = "Airplane"
+
 [syn2cls]
-	Airplane 	= "02691156"
-	Bag 		= "02773838"
-	Cap 		= "02954340"
-	Car 		= "02958343"
-	Chair 		= "03001627"
-	Earphone 	= "03261776"
-	Guitar 		= "03467517"
-	Knife 		= "03624134"
-	Lamp 		= "03636649"
-	Laptop 		= "03642806"
-	Motorbike 	= "03790512"
-	Mug 		= "03797390"
-	Pistol 		= "03948459"
-	Rocket 		= "04099429"
-	Skateboard 	= "04225987"
-	Table 		= "04379243"
+	02691156 = "Airplane"
+	02773838 = "Bag"
+	02954340 = "Cap"
+	02958343 = "Car"
+	03001627 = "Chair"	
+	03261776 = "Earphone"
+	03467517 = "Guitar"	
+	03624134 = "Knife"	
+	03636649 = "Lamp"
+	03642806 = "Laptop"	
+	03790512 = "Motorbike"	
+	03797390 = "Mug"
+	03948459 = "Pistol"	
+	04099429 = "Rocket"	
+	04225987 = "Skateboard" 	
+	04379243 = "Table"	
 
 [seqs_split]
 	train = 0.7

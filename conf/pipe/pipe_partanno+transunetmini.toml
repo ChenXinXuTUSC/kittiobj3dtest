@@ -1,0 +1,26 @@
+exp_name = "partannno+transunetmini"
+
+[model]
+	name = "TransUNetMini"
+	conf = "conf/model/model_transunetmini.toml"
+
+[dataset]
+	name = "PartAnno"
+	conf = "conf/dataset/dataset_partanno.toml"
+
+[loss]
+	name = "TransUNetMiniLoss"
+	conf = "conf/loss/loss_transunetmini.toml"
+
+[metric]
+	name = "TransUNetMiniMetric"
+	conf = "conf/metric/metric_transunetmini.toml"
+
+[log]
+	log_alldir = "log/test"
+	log_interv = 10
+
+[train]
+	lr = 0.001
+	batch_size = 1
+	num_epochs = 10

@@ -12,7 +12,7 @@ import utils
 from . import DATASET
 from .dataset_base import BaseDataset
 
-from ...utils.projproc import snapshot_voxelized
+from utils.projproc import snapshot_voxelized
 
 
 @DATASET.register
@@ -23,23 +23,30 @@ class PartAnno(BaseDataset):
 		kwds = easydict.EasyDict(kwds)
 		self.args = kwds
 
-		self.split = self.args.split
-		assert self.split in self.args.seqs_split, \
+		self.root = kwds.root
+		assert osp.exists(self.root), \
+			f"{self.root} not exists"
+
+		cls2syn = {v: k for k, v in kwds.syn2cls.items()}
+
+		self.split = kwds.split
+		assert self.split in kwds.seqs_split, \
 			f"{self.split} not in dataset conf"
 
-		self.selecte_cls_name = self.args.selected_cls_name
-		assert self.selecte_cls_name in self.args.cls_names, \
-			f"{self.selecte_cls_name} not in dataset conf"
+		self.selected_cls_name = kwds.selected_cls_name
+		assert self.selected_cls_name in kwds.cls_names, \
+			f"{self.selected_cls_name} not in dataset conf"
+		self.selecte_syn_name = cls2syn[self.selected_cls_name]
 
-		self.points_root = osp.join(self.args.root, self.selecte_cls_name, "points")
+		self.points_root = osp.join(self.root, self.selecte_syn_name, "points")
 		assert osp.exists(self.points_root), \
 			f"{self.root} points not exists"
-		self.labels_root = osp.join(self.args.root, self.selecte_cls_name, "points_label")
+		self.labels_root = osp.join(self.root, self.selecte_syn_name, "points_label")
 		assert osp.exists(self.labels_root), \
 			f"{self.root} labels not exists"
 		
 		assert len(os.listdir(self.points_root)) == len(os.listdir(self.labels_root)), \
-			f"{self.selecte_cls_name} number of points and labels file mismatched"
+			f"{self.selected_cls_name} number of points and labels file mismatched"
 
 		assert sum(self.args.seqs_split.values()) <= 1.0, \
 			f"sum of seqs_split ratio should be <= 1.0"
@@ -57,7 +64,7 @@ class PartAnno(BaseDataset):
 			if end >= len(self.all_samples):
 				break
 		
-		self.samples = self.samples[self.split]
+		self.samples = self.split_samples[self.split]
 		self.files = []
 		for sample in self.samples:
 			self.files.append((
@@ -66,10 +73,11 @@ class PartAnno(BaseDataset):
 			))
 		
 
-		# 其他属性获取，体素投影分辨率尺寸，体素大小，投影轴位置
-		self.voxel_size = self.args.voxel_size
-		self.project_res = self.args.project_res
-		self.project_axis_list = self.args.project_axis_list
+		# 其他属性获取，体素投影分辨率尺寸，体素大小，各个投影轴位置
+		self.voxel_size = kwds.voxel_size
+		self.proj_img_h = kwds.proj_img_h
+		self.proj_img_w = kwds.proj_img_w
+		self.proj_axis_list = kwds.proj_axis_list
 
 	def __getitem__(self, index):
 		# return super().__getitem__(index)
@@ -87,6 +95,3 @@ class PartAnno(BaseDataset):
 	
 	def __len__(self):
 		return len(self.files)
-	
-	def __assert__(self):
-		assert self.vox

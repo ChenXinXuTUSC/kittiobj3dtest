@@ -17,10 +17,15 @@ def main():
 	args = parser.parse_args()
 	conf_main = core.conf.read(args.conf)
 	pprint(conf_main)
+
 	args_dataset = core.conf.read(conf_main.dataset.conf)
 	args_model   = core.conf.read(conf_main.model.conf)
 	args_loss	 = core.conf.read(conf_main.loss.conf)
 	args_metric  = core.conf.read(conf_main.metric.conf)
+	pprint(args_dataset)
+	pprint(args_model)
+	pprint(args_loss)
+	pprint(args_metric)
 
 	# dataset is more important than model
 	train_dataset = core.dataset.DATASET[conf_main.dataset.name](**args_dataset, split="train")

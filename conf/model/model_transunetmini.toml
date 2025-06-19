@@ -1,0 +1,12 @@
+in_channels = 5
+out_channels = 6
+
+dn_channels = [32, 64, 128]
+up_channels = [128, 64, 32]
+
+attn_hidn_size = 512
+num_heads = 8
+num_encds = 8
+
+proj_img_h = 32
+proj_img_w = 32
