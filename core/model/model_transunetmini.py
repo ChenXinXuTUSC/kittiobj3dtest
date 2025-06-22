@@ -65,7 +65,7 @@ class TransUNetMini(nn.Module):
 			"UNet structure requires same feature channels between downsample and upsample end point"
 
 		self.dn_channels = [kwds.in_channels] + self.dn_channels
-		self.up_channels = self.up_channels + [kwds.out_channels]
+		self.up_channels = [kwds.attn_hidn_size] + self.up_channels
 
 		# 多级卷积请注册为 ModuleList ，否则 to(device) 不会检测到非 nn.Module 属性的参数
 		self.dn_convs = nn.ModuleList([ConvDn(self.dn_channels[i], self.dn_channels[i+1]) for i in range(len(self.dn_channels)-1)])
@@ -80,13 +80,21 @@ class TransUNetMini(nn.Module):
 			],
 			patch_shape=(1, 1),
 			in_channels=self.dn_channels[-1],
-			out_channels=self.dn_channels[-1]
+			out_channels=kwds.attn_hidn_size
 		)
 		# 级联 Transformer 编码器
 		self.encoder = CascadedEncoder(
 			num_casd=kwds.num_encds,
 			num_heads=kwds.num_heads,
 			hidn_size=kwds.attn_hidn_size,
+		)
+		# 分类输出头
+		self.seg_head = nn.Conv2d(
+			in_channels=self.up_channels[-1],
+			out_channels=kwds.out_channels,
+			kernel_size=1,
+			stride=1,
+			padding=0
 		)
 	
 	def forward(self, batch):
@@ -98,7 +106,7 @@ class TransUNetMini(nn.Module):
 		x = x.view(B * I, C, H, W)
 
 		# 下采样链路
-		dn_out_list = [x]
+		dn_out_list = []
 		for dn_conv in self.dn_convs:
 			x = dn_conv(x)
 			dn_out_list.append(x)
@@ -106,22 +114,21 @@ class TransUNetMini(nn.Module):
 		_, _, CONV_DN_H, CONV_DN_W = x.size() 
 
 		# Vision Transformer 编码器
-		x = self.embeder(x)
+		x = self.embeder(x) # 从图块转变为序列数据
 		x = self.encoder(x)
 
 		# 编码器输出重新转换为上采样所需维度
 		_, S, E = x.size() # [忽略样本批次，序列长度，嵌入维度]
-		x = x.view(B, I, S, E) # [样本批次，每个样本视图数量，每个视图的序列长度，嵌入维度]
+		x = x.view(B * I, S, E) # [样本批次，每个样本视图数量，每个视图的序列长度，嵌入维度]
 		# 交换最后两个维度
-		x = x.permute(0, 1, 3, 2)
-		x = x.view(B, I, E, CONV_DN_H, CONV_DN_W)
+		x = x.permute(0, 2, 1)
+		x = x.view(B * I, E, CONV_DN_H, CONV_DN_W)
 
 		# 上采样链路
-		up_out_list = [x]
 		for up_conv in self.up_convs:
 			x = up_conv(x)
-			up_out_list.append(x)
 		
 		# 最终输出语义分割 logit
-
+		x = self.seg_head(x)
+		
 		return x
