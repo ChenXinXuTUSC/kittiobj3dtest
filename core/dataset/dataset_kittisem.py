@@ -96,24 +96,24 @@ class KITTISemantic(BaseDataset):
 		data, gdth, rmap = zip(*batch)
 		data = torch.tensor(np.array(data), dtype=torch.float32)
 		gdth = torch.tensor(np.array(gdth), dtype=torch.long)
-		# padding
-		max_rmap_len = max([len(x) for x in rmap])
-		rmap = np.array(
-			[
-				(
-					len(x),
-					np.pad(
-						x,
-						((0, max_rmap_len - len(x)), (0, 0)),
-						mode="constant", constant_values=0
-					)
-				) for x in rmap
-			],
-			dtype=np.dtype([
-				('valid', np.int32),
-				('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))  # 不知道 dataset 传出来的逆投影关系映射一个关系包含多少特征
-			])
-		)
+		# # padding
+		# max_rmap_len = max([len(x) for x in rmap])
+		# rmap = np.array(
+		# 	[
+		# 		(
+		# 			len(x),
+		# 			np.pad(
+		# 				x,
+		# 				((0, max_rmap_len - len(x)), (0, 0)),
+		# 				mode="constant", constant_values=0
+		# 			)
+		# 		) for x in rmap
+		# 	],
+		# 	dtype=np.dtype([
+		# 		('valid', np.int32),
+		# 		('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))  # 不知道 dataset 传出来的逆投影关系映射一个关系包含多少特征
+		# 	])
+		# )
 		return {
 			"data": data,
 			"gdth": gdth,
