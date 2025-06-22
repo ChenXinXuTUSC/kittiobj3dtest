@@ -79,13 +79,18 @@ class PartAnno(BaseDataset):
 		self.proj_img_w = kwds.proj_img_w
 		self.proj_axis_list = kwds.proj_axis_list
 
+		# 更新批次样本处理函数，填充每个批次的内存布局
+		self.collate_fn_registry["train"] = self.__batch_padding__
+		self.collate_fn_registry["valid"] = self.__batch_padding__
+		self.collate_fn_registry["testt"] = self.__batch_padding__
+
 	def __getitem__(self, index):
 		# return super().__getitem__(index)
 		points = np.loadtxt(self.files[index][0], delimiter=" ").astype(np.float32)
 		labels = np.loadtxt(self.files[index][1], delimiter=" ").astype(np.int32)
 
 		data, gdth, rmap = list(zip(*[
-			(data, gdth) for data, gdth, rmap in [snapshot_voxelized(
+			(data, gdth, rmap) for data, gdth, rmap in [snapshot_voxelized(
 				points[:, :3], labels,
 				self.voxel_size, (self.proj_img_h, self.proj_img_w),
 				proj_axis, (0, 0, 0) # partanno 是小数据集，直接对模型中央投影即可
@@ -95,7 +100,7 @@ class PartAnno(BaseDataset):
 		return (
 			np.array(data, dtype=np.float32),
 			np.array(gdth, dtype=np.int32),
-			np.array(rmap, dtype=np.int32)
+			rmap
 		)
 	
 	def __len__(self):
@@ -106,24 +111,24 @@ class PartAnno(BaseDataset):
 		data, gdth, rmap = zip(*batch)
 		data = torch.tensor(np.array(data), dtype=torch.float32)
 		gdth = torch.tensor(np.array(gdth), dtype=torch.long)
-		# 由于投影区域的不同，每幅投影图的逆映射涉及到的原始点云数量不同，需要统一填充到一致长度
-		max_rmap_len = max([len(x) for x in rmap])
-		rmap = np.array(
-			[
-				(
-					len(x),
-					np.pad(
-						x,
-						((0, max_rmap_len - len(x)), (0, 0)),
-						mode="constant", constant_values=0
-					)
-				) for x in rmap
-			],
-			dtype=np.dtype([
-				('valid', np.int32),
-				('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))  # 不知道 dataset 传出来的逆投影关系映射一个关系包含多少特征
-			])
-		)
+		# # 由于投影区域的不同，每幅投影图的逆映射涉及到的原始点云数量不同，需要统一填充到一致长度
+		# max_rmap_len = max([len(x) for x in rmap])
+		# rmap = np.array(
+		# 	[
+		# 		(
+		# 			len(x),
+		# 			np.pad(
+		# 				x,
+		# 				((0, max_rmap_len - len(x)), (0, 0)),
+		# 				mode="constant", constant_values=0
+		# 			)
+		# 		) for x in rmap
+		# 	],
+		# 	dtype=np.dtype([
+		# 		('valid', np.int32),
+		# 		('ptpix', np.float32, (max_rmap_len, rmap[0].shape[1]))
+		# 	])
+		# )
 		return {
 			"data": data,
 			"gdth": gdth,

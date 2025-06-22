@@ -52,7 +52,7 @@ class TransUNetMini(nn.Module):
 	def __init__(self, *args, **kwds):
 		super().__init__()
 		# 1. 编码器 - Transformer
-		# 2. 解码器 - 级联反卷积上采样
+		# 2. 解码器 - 级联反卷积上采样生成
 
 		kwds = easydict.EasyDict(kwds)
 		self.args = kwds
@@ -67,16 +67,20 @@ class TransUNetMini(nn.Module):
 		self.dn_channels = [kwds.in_channels] + self.dn_channels
 		self.up_channels = self.up_channels + [kwds.out_channels]
 
-		self.dn_convs = [ConvDn(self.dn_channels[i], self.dn_channels[i+1]) for i in range(len(self.dn_channels)-1)]
-		self.up_convs = [ConvUp(self.up_channels[i], self.up_channels[i+1]) for i in range(len(self.up_channels)-1)]
+		# 多级卷积请注册为 ModuleList ，否则 to(device) 不会检测到非 nn.Module 属性的参数
+		self.dn_convs = nn.ModuleList([ConvDn(self.dn_channels[i], self.dn_channels[i+1]) for i in range(len(self.dn_channels)-1)])
+		self.up_convs = nn.ModuleList([ConvUp(self.up_channels[i], self.up_channels[i+1]) for i in range(len(self.up_channels)-1)])
 
 		# 注意图块嵌入器的图像大小是降采样最后输出的尺寸，不是图像原始尺寸
 		# 将一幅特征图转换为一个 patch-token 序列
 		self.embeder = Embedding(
-			[kwds.proj_img_h // (2**(len(self.dn_channels)-1)), kwds.proj_img_w // (2**(len(self.dn_channels)-1)) ],
-			(1, 1),
-			kwds.in_channels,
-			kwds.out_channels
+			image_shape=[
+				kwds.proj_img_h // (2**(len(self.dn_channels)-1)),
+				kwds.proj_img_w // (2**(len(self.dn_channels)-1))
+			],
+			patch_shape=(1, 1),
+			in_channels=self.dn_channels[-1],
+			out_channels=self.dn_channels[-1]
 		)
 		# 级联 Transformer 编码器
 		self.encoder = CascadedEncoder(
@@ -85,20 +89,24 @@ class TransUNetMini(nn.Module):
 			hidn_size=kwds.attn_hidn_size,
 		)
 	
-	def forward(self, x: torch.Tensor):
+	def forward(self, batch):
+		# batch 是一个数据集输出的自定义的字典，存储了所有相关的训练所需的数据，不只是训练集的输入
+		x = batch["data"]
 		# 一个样本具有多个视角投影图，现在并行卷积，不区分每个特征图具体来自哪个样本
 		# 进入的样本批次形状为 [B, N, H, W, C]，压缩为 [B*N, H, W, C]
 		B, I, C, H, W = x.size()
 		x = x.view(B * I, C, H, W)
 
-		# 两层下采样
-		dn_out_list = []
+		# 下采样链路
+		dn_out_list = [x]
 		for dn_conv in self.dn_convs:
-			dn_out_list.append(dn_conv(x))
+			x = dn_conv(x)
+			dn_out_list.append(x)
 		# 记录送入编码器之前最后的 patch shape
 		_, _, CONV_DN_H, CONV_DN_W = x.size() 
 
-		# Transformer 编码器
+		# Vision Transformer 编码器
+		x = self.embeder(x)
 		x = self.encoder(x)
 
 		# 编码器输出重新转换为上采样所需维度
@@ -108,10 +116,11 @@ class TransUNetMini(nn.Module):
 		x = x.permute(0, 1, 3, 2)
 		x = x.view(B, I, E, CONV_DN_H, CONV_DN_W)
 
-		# 两层上采样
-		up_out_list = []
+		# 上采样链路
+		up_out_list = [x]
 		for up_conv in self.up_convs:
-			up_out_list.append(up_conv(x))
+			x = up_conv(x)
+			up_out_list.append(x)
 		
 		# 最终输出语义分割 logit
 
