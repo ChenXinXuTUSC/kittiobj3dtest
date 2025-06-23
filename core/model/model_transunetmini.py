@@ -9,22 +9,31 @@ import easydict
 from .embd import Embedding
 from .encd import CascadedEncoder
 
+class ConvBlock(nn.Module):
+	def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1):
+		super().__init__()
+		self.conv = nn.Sequential(
+			nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+			nn.BatchNorm2d(out_channels), # 插入 BatchNorm
+			nn.ReLU(inplace=True)         # 插入 ReLU
+		)
+	
+	def forward(self, x: torch.Tensor):
+		return self.conv(x)
+
 class ConvDn(nn.Module):
 	def __init__(self, in_channels: int, out_channels: int):
 		super().__init__()
-		# 全尺寸卷积 + 池化 + ReLU
-		self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-		self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+		# 改进：第一个卷积层后插入归一化和激活
+		self.conv1 = ConvBlock(in_channels, out_channels)
+		# 改进：第二个卷积层后插入归一化和激活
+		self.conv2 = ConvBlock(out_channels, out_channels)
+		# 池化层通常在卷积和激活之后进行下采样
 		self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.norm = nn.BatchNorm2d(out_channels)
-		self.relu = nn.ReLU(inplace=True)
-	
 	def forward(self, x: torch.Tensor):
-		x = self.conv1(x)
-		x = self.conv2(x)
-		x = self.pool(x)
-		x = self.norm(x)
-		x = self.relu(x)
+		x = self.conv1(x) # conv -> norm -> relu
+		x = self.conv2(x) # conv -> norm -> relu
+		x = self.pool(x)        # 下采样
 		return x
 
 class ConvUp(nn.Module):
@@ -32,17 +41,15 @@ class ConvUp(nn.Module):
 		super().__init__()
 		# 通过 ConvTranspose2d 完成 2x 倍率上采样
 		self.up = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
-		self.conv1 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-		self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-		self.norm = nn.BatchNorm2d(out_channels)
-		self.relu = nn.ReLU(inplace=True)
+        # 改进：插入归一化和激活
+		self.conv1 = ConvBlock(out_channels, out_channels)
+        # 改进：插入归一化和激活
+		self.conv2 = ConvBlock(out_channels, out_channels)
 	
 	def forward(self, x: torch.Tensor):
 		x = self.up(x)
 		x = self.conv1(x)
 		x = self.conv2(x)
-		x = self.norm(x)
-		x = self.relu(x)
 		return x
 
 
@@ -57,29 +64,35 @@ class TransUNetMini(nn.Module):
 		kwds = easydict.EasyDict(kwds)
 		self.args = kwds
 
-		self.dn_channels = kwds.dn_channels # channels during downsample
-		self.up_channels = kwds.up_channels # channels during upsample
-		assert len(self.dn_channels) == len(self.up_channels), \
+		# self.dn_channels = kwds.dn_channels # channels during downsample
+		# self.up_channels = kwds.up_channels # channels during upsample
+		assert len(kwds.dn_channels) == len(kwds.up_channels), \
 			"UNet structure requires same number of up and down sample"
-		assert self.dn_channels[-1] == self.up_channels[0], \
-			"UNet structure requires same feature channels between downsample and upsample end point"
-
-		self.dn_channels = [kwds.in_channels] + self.dn_channels
-		self.up_channels = [kwds.attn_hidn_size] + self.up_channels
+		
+		# for i, (dn, up) in enumerate(zip(self.dn_channels, self.up_channels)):
+		# 	self.up_channels[i] = dn + up # UNet skip connection concate
+		# self.dn_channels = [kwds.in_channels] + self.dn_channels
+		# self.up_channels = [kwds.attn_hidn_size] + self.up_channels
 
 		# 多级卷积请注册为 ModuleList ，否则 to(device) 不会检测到非 nn.Module 属性的参数
-		self.dn_convs = nn.ModuleList([ConvDn(self.dn_channels[i], self.dn_channels[i+1]) for i in range(len(self.dn_channels)-1)])
-		self.up_convs = nn.ModuleList([ConvUp(self.up_channels[i], self.up_channels[i+1]) for i in range(len(self.up_channels)-1)])
+		self.dn_convs = nn.ModuleList(
+			[ConvBlock(kwds.in_channels, kwds.dn_channels[0], kernel_size=1, stride=1, padding=0)] + \
+			[ConvDn(kwds.dn_channels[i], kwds.dn_channels[i+1]) for i in range(len(kwds.dn_channels)-1)]
+		)
+		self.up_convs = nn.ModuleList(
+			[ConvBlock(kwds.attn_hidn_size, kwds.up_channels[0], kernel_size=1, stride=1, padding=0)] + \
+			[ConvUp(kwds.up_channels[i] + kwds.dn_channels[-(i+1)], kwds.up_channels[i+1]) for i in range(len(kwds.up_channels)-1)]
+		)
 
 		# 注意图块嵌入器的图像大小是降采样最后输出的尺寸，不是图像原始尺寸
 		# 将一幅特征图转换为一个 patch-token 序列
 		self.embeder = Embedding(
 			image_shape=[
-				kwds.proj_img_h // (2**(len(self.dn_channels)-1)),
-				kwds.proj_img_w // (2**(len(self.dn_channels)-1))
+				kwds.proj_img_h // (2**(len(kwds.dn_channels)-1)),
+				kwds.proj_img_w // (2**(len(kwds.dn_channels)-1))
 			],
 			patch_shape=(1, 1),
-			in_channels=self.dn_channels[-1],
+			in_channels=kwds.dn_channels[-1],
 			out_channels=kwds.attn_hidn_size
 		)
 		# 级联 Transformer 编码器
@@ -90,7 +103,7 @@ class TransUNetMini(nn.Module):
 		)
 		# 分类输出头
 		self.seg_head = nn.Conv2d(
-			in_channels=self.up_channels[-1],
+			in_channels=kwds.up_channels[-1] + kwds.dn_channels[0],
 			out_channels=kwds.out_channels,
 			kernel_size=1,
 			stride=1,
@@ -124,11 +137,13 @@ class TransUNetMini(nn.Module):
 		x = x.permute(0, 2, 1)
 		x = x.view(B * I, E, CONV_DN_H, CONV_DN_W)
 
-		# 上采样链路
+		# 上采样链路 和 下采样链路对应每层进行拼接
 		for up_conv in self.up_convs:
 			x = up_conv(x)
+			x = torch.concat([x, dn_out_list.pop()], dim=1)
 		
 		# 最终输出语义分割 logit
 		x = self.seg_head(x)
 		
+		x = x.view(B, I, self.out_channels, H, W)
 		return x
