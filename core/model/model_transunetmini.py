@@ -109,6 +109,10 @@ class TransUNetMini(nn.Module):
 			stride=1,
 			padding=0
 		)
+
+		# 其他在后续需要使用到的属性
+		self.in_channels = kwds.in_channels
+		self.out_channels = kwds.out_channels
 	
 	def forward(self, batch):
 		# batch 是一个数据集输出的自定义的字典，存储了所有相关的训练所需的数据，不只是训练集的输入
@@ -144,6 +148,6 @@ class TransUNetMini(nn.Module):
 		
 		# 最终输出语义分割 logit
 		x = self.seg_head(x)
-		
-		x = x.view(B, I, self.out_channels, H, W)
+		# # 还原输入，便于后续损失函数计算？
+		# x = x.view(B, I, self.out_channels, H, W)
 		return x

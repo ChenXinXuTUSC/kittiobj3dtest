@@ -178,16 +178,16 @@ class Trainer:
 			optimizer.zero_grad()
 			loss.backward()
 			optimizer.step()
-
-			mtlog.update_metrics(batch)
-			if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
-				mtlog.log_metrics(
-					tflog,
-					prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
-					tfbtag="train",
-					step=epoch * len(self.train_dataloader) + iter,
-					loss=loss.item()
-				)
+			continue
+			# mtlog.update_metrics(batch)
+			# if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
+			# 	mtlog.log_metrics(
+			# 		tflog,
+			# 		prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
+			# 		tfbtag="train",
+			# 		step=epoch * len(self.train_dataloader) + iter,
+			# 		loss=loss.item()
+			# 	)
 		
 		if self.world_rank == 0:
 			# only main process have file access

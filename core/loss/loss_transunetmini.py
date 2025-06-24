@@ -27,5 +27,8 @@ class TransUNetMiniLoss(nn.Module):
 		pred = batch["pred"]
 		gdth = batch["gdth"]
 
+		B, I, H, W = gdth.size()
+		gdth = gdth.view(B * I, H, W)
+
 		loss= self.loss_fn(pred, gdth)
 		return loss

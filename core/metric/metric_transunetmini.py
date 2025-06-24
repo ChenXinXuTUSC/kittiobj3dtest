@@ -162,8 +162,7 @@ class TransUNetMiniMetric(BaseMetricLog):
 
 	def __compute_metrics(self, pred: torch.Tensor, gdth: torch.Tensor):
 		# pred 和 gdth 是形状为 (batch_size, height, width) 的张量
-		pred = pred["out"] # 预测结果具体使用方式见模型的 forward 函数返回值
-		if len(pred.shape) > 3:
+		if len(pred.shape) > 3: # 以应对多个投影视图单独分开时候的情况
 			pred = torch.argmax(pred, dim=1)
 		
 		iou = {}
