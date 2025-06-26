@@ -148,6 +148,6 @@ class TransUNetMini(nn.Module):
 		
 		# 最终输出语义分割 logit
 		x = self.seg_head(x)
-		# # 还原输入，便于后续损失函数计算？
-		# x = x.view(B, I, self.out_channels, H, W)
+		# 还原输入，便于后续指标计算
+		x = x.view(B, I, self.out_channels, H, W)
 		return x

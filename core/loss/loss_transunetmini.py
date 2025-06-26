@@ -27,8 +27,11 @@ class TransUNetMiniLoss(nn.Module):
 		pred = batch["pred"]
 		gdth = batch["gdth"]
 
-		B, I, H, W = gdth.size()
-		gdth = gdth.view(B * I, H, W)
+		# 转换为适合多分类交叉熵损失函数的计算形式
+		B, I, C, H, W = pred.size()
+		pred = pred.view(B, C, I, H, W)
 
 		loss= self.loss_fn(pred, gdth)
+		# 还原方便后续指标计算？
+		pred = pred.view(B, I, C, H, W)
 		return loss

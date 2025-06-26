@@ -161,10 +161,10 @@ class TransUNetMiniMetric(BaseMetricLog):
 		)
 
 	def __compute_metrics(self, pred: torch.Tensor, gdth: torch.Tensor):
-		# pred 和 gdth 是形状为 (batch_size, height, width) 的张量
-		if len(pred.shape) > 3: # 以应对多个投影视图单独分开时候的情况
-			pred = torch.argmax(pred, dim=1)
-		
+		# pred: [B, I, C, H, W]
+		# gdth: [B, I, H, W]
+		pred = torch.argmax(pred, dim=2)
+
 		iou = {}
 		acc = {}
 		rec = {}
