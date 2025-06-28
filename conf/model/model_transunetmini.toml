@@ -1,5 +1,5 @@
 in_channels = 4
-out_channels = 6
+out_channels = 5
 
 dn_channels = [32, 64, 96, 128]
 up_channels = [128, 96, 64, 32]

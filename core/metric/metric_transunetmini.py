@@ -88,13 +88,6 @@ class TransUNetMiniMetric(BaseMetricLog):
 		self.mean_metric["iou"].append(mean_iou)
 		self.mean_metric["acc"].append(mean_acc)
 		self.mean_metric["rec"].append(mean_rec)
-
-		# if mean_iou > self.best_metric:
-		#	 self.best_metric = mean_iou
-		# if mean_acc > self.best_metric["acc"]:
-		#	 self.best_metric["acc"] = mean_acc
-		# if mean_rec > self.best_metric["rec"]:
-		#	 self.best_metric["rec"] = mean_rec
 	
 	# console and tensorboard log
 	# print the last computed metric
@@ -135,14 +128,15 @@ class TransUNetMiniMetric(BaseMetricLog):
 		logger.tfx.add_scalar(tag=f"{tfbtag}/loss", scalar_value=misc_metrics["loss"], global_step=step)
 
 		# visualize pred and gdth mask image
-		data = self.data
-		pred = self.pred
-		gdth = self.gdth
-		# 原始特征图数据特征通道是 [x, y, z, i, r] ，最后一维是深度特征
-		fmap_img = data[0][4].cpu().numpy()
+		data = self.data[0][0][-1] # 第一个样本的第一个投影视图
+		pred = self.pred[0][0] # 第一个样本的第一个投影视图
+		gdth = self.gdth[0][0] # 第一个样本的第一个投影视图
+
+		# 原始特征图数据特征通道是 [x, y, z, r] ，最后一维是深度特征
+		fmap_img = data.cpu().numpy()
 		# 用户应该知晓自己的模型输出是什么，然后在这里自己处理
-		pred_img = torch.argmax(pred["out"][0], dim=0).cpu().numpy()
-		gdth_img = gdth[0].cpu().numpy()
+		pred_img = torch.argmax(pred, dim=0).cpu().numpy()
+		gdth_img = gdth.cpu().numpy()
 
 		# add color
 		pred_img = self.visualize_fmap(pred_img)
@@ -194,6 +188,6 @@ class TransUNetMiniMetric(BaseMetricLog):
 		- fmap: [H, W] shape
 		'''
 		img = np.zeros((*fmap.shape[:2], 3), dtype=np.uint8)
-		for idx, clr in enumerate(self.pallete.values()):
+		for idx, clr in enumerate(self.pallete):
 			img[fmap == idx] = np.array(clr)
 		return img

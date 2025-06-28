@@ -2,8 +2,8 @@ root = "data/partanno"
 
 used_class = "Airplane"
 
-train_set_ratio = 0.7
-valid_set_ratio = 0.3
+train_set_ratio = 0.8
+valid_set_ratio = 0.2
 
 voxel_size = 0.025
 

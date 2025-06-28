@@ -183,7 +183,7 @@ class Trainer:
 			if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
 				mtlog.log_metrics(
 					tflog,
-					prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader):.2f}%]",
+					prefix=f"train [{epoch+1}/{self.num_epochs} {iter / len(self.train_dataloader) * 100:.2f}%]",
 					tfbtag="train",
 					step=epoch * len(self.train_dataloader) + iter,
 					loss=loss.item()
@@ -224,7 +224,7 @@ class Trainer:
 				if self.world_rank == 0 and (iter + 1) % self.log_interv == 0:
 					mtlog.log_metrics(
 						tflog,
-						prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader):.2f}%]",
+						prefix=f"valid [{epoch+1}/{self.num_epochs} {iter / len(self.valid_dataloader) * 100:.2f}%]",
 						tfbtag="valid",
 						step=epoch * len(self.valid_dataloader) + iter,
 						loss=loss.item()
