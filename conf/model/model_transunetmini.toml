@@ -5,8 +5,8 @@ dn_channels = [32, 64, 96, 128]
 up_channels = [128, 96, 64, 32]
 
 attn_hidn_size = 512
-num_heads = 8
+num_heads = 12
 num_encds = 8
 
-proj_img_h = 32
-proj_img_w = 32
+proj_img_h = 64
+proj_img_w = 64

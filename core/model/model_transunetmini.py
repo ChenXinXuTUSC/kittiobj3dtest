@@ -1,5 +1,8 @@
+import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import torchvision
 
 import sys
 sys.path.append("..")
@@ -114,7 +117,7 @@ class TransUNetMini(nn.Module):
 		self.in_channels = kwds.in_channels
 		self.out_channels = kwds.out_channels
 	
-	def forward(self, batch):
+	def forward(self, batch: dict):
 		# batch 是一个数据集输出的自定义的字典，存储了所有相关的训练所需的数据，不只是训练集的输入
 		x = batch["data"]
 		# 一个样本具有多个视角投影图，现在并行卷积，不区分每个特征图具体来自哪个样本

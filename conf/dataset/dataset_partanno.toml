@@ -5,10 +5,10 @@ used_class = "Airplane"
 train_set_ratio = 0.8
 valid_set_ratio = 0.2
 
-voxel_size = 0.025
+voxel_size = 0.01
 
-proj_img_h = 32
-proj_img_w = 32
+proj_img_h = 64
+proj_img_w = 64
 
 proj_axis_list = [
 	[0, 1, 1],
@@ -16,9 +16,7 @@ proj_axis_list = [
 	[1, 1, 0],
 	[0, -1, -1],
 	[-1, 0, -1],
-	[-1, -1, 0],
-	[1, 1, 1],
-	[-1, -1, -1]
+	[-1, -1, 0]
 ]
 
 cls_names = [
@@ -61,6 +59,6 @@ selected_cls_name = "Airplane"
 	04379243 = "Table"	
 
 [seqs_split]
-	train = 0.7
+	train = 0.8
 	valid = 0.2
-	testt = 0.1
+	testt = 0.0
