@@ -128,12 +128,12 @@ class TransUNetMiniMetric(BaseMetricLog):
 		logger.tfx.add_scalar(tag=f"{tfbtag}/loss", scalar_value=misc_metrics["loss"], global_step=step)
 
 		# visualize pred and gdth mask image
-		data = self.data[0][0][-1] # 第一个样本的第一个投影视图
+		data = self.data[0][2][-1] # 第一个样本的第二个投影视图的深度特征图
 		pred = self.pred[0][0] # 第一个样本的第一个投影视图
 		gdth = self.gdth[0][0] # 第一个样本的第一个投影视图
 
 		# 原始特征图数据特征通道是 [x, y, z, r] ，最后一维是深度特征
-		fmap_img = data.cpu().numpy()
+		fmap_img = data.cpu().numpy().astype(np.int32)
 		# 用户应该知晓自己的模型输出是什么，然后在这里自己处理
 		pred_img = torch.argmax(pred, dim=0).cpu().numpy()
 		gdth_img = gdth.cpu().numpy()

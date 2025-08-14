@@ -13,13 +13,13 @@ class TransUNetMiniLoss(nn.Module):
 		kwds = easydict.EasyDict(kwds)
 		self.args = kwds
 
-		self.weight = kwds.get("weight", None)
+		self.cls_weight = kwds.get("cls_weight", None)
 		self.ignore_index = kwds.get("ignore_index", -1)
-		if self.weight is not None and not isinstance(self.weight, torch.Tensor):
-			self.weight = torch.tensor(self.weight)
+		if self.cls_weight is not None and not isinstance(self.cls_weight, torch.Tensor):
+			self.cls_weight = torch.tensor(self.cls_weight)
 
 		self.loss_fn = nn.CrossEntropyLoss(
-			weight=self.weight,
+			weight=self.cls_weight,
 			ignore_index=self.ignore_index
 		)
 	
