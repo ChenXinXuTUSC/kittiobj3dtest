@@ -1,4 +1,4 @@
-exp_name = "partannno+transunetmini"
+exp_name = "partanno+transunetmini"
 
 [model]
 	name = "TransUNetMini"
@@ -22,5 +22,5 @@ exp_name = "partannno+transunetmini"
 
 [train]
 	lr = 0.001
-	batch_size = 8
+	batch_size = 6
 	num_epochs = 100

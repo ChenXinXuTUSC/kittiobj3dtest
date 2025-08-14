@@ -6,7 +6,9 @@ up_channels = [128, 96, 64, 32]
 
 attn_hidn_size = 512
 num_heads = 12
-num_encds = 8
+num_encds = 12
 
 proj_img_h = 64
 proj_img_w = 64
+
+retain_attn = true # 测试时再开启保留模型前向传播时的注意力图
