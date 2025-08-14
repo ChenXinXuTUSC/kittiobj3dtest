@@ -103,6 +103,7 @@ class TransUNetMini(nn.Module):
 			num_casd=kwds.num_encds,
 			num_heads=kwds.num_heads,
 			hidn_size=kwds.attn_hidn_size,
+			retain_attn=kwds.retain_attn
 		)
 		# 分类输出头
 		self.seg_head = nn.Conv2d(
@@ -135,8 +136,12 @@ class TransUNetMini(nn.Module):
 
 		# Vision Transformer 编码器
 		x = self.embeder(x) # 从图块转变为序列数据
+		# 所有视角的 patch-token 合并到一条序列，统一执行自注意力
+		E_B, E_S, E_E = x.size()
+		x = x.reshape(1, E_B * E_S, E_E)
+		# 得到每个视角中每个图块之间的相互关系
 		x = self.encoder(x)
-
+		x = x.reshape(E_B, E_S, E_E)
 		# 编码器输出重新转换为上采样所需维度
 		_, S, E = x.size() # [忽略样本批次，序列长度，嵌入维度]
 		x = x.view(B * I, S, E) # [样本批次，每个样本视图数量，每个视图的序列长度，嵌入维度]
