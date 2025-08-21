@@ -34,7 +34,7 @@ def main():
 	# create corresponding model
 	model = core.model.MODEL[conf_main.model.name](**args_model)
 
-	criterion = core.loss.LOSS[conf_main.loss.name](**args_loss)
+	criterion = core.loss.LOSS[conf_main.loss.name](**args_loss, cls_weight=args_dataset.cls_weight)
 
 	metriclog = core.metric.METRIC[conf_main.metric.name](**args_metric)
 

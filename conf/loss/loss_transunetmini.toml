@@ -1,4 +1,4 @@
-cls_weight = [1.0, 0.7, 0.5, 0.5, 0.5]
+# cls_weight = [1.0, 0.7, 0.5, 0.5, 0.5]
 ignore_cls = -1
 bkgcls_idx = 0
 bg_clsname = "DontCare"

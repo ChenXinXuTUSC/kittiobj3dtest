@@ -6,16 +6,18 @@ valid_set_ratio = 0.3
 proj_img_h = 128
 proj_img_w = 1024
 
+cls_weight = [0.7, 0.6, 0.8, 0.3, 0.7, 0.7, 0.8, 0.8, 0.8]
+
 kitti_obj3d_det_cls_names = [
-    "DontCare",
-    "Car",
-    "Cyclist",
-    "Misc",
-    "Pedestrian",
-    "Person_sitting",
-    "Tram",
-    "Truck",
-    "Van",
+    "DontCare", # 0.7
+    "Car", # 0.6
+    "Cyclist", # 0.8
+    "Misc", # 0.3
+    "Pedestrian", # 0.7
+    "Person_sitting", # 0.7
+    "Tram", # 0.8
+    "Truck", # 0.8
+    "Van", # 0.8
 ]
 
 label_field_name_list = [
